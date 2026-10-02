@@ -1,11 +1,13 @@
 import type { DisabledScreenProps } from './types';
 import { useId } from 'react';
 
+const currentYear = new Date().getFullYear();
+
 const getConfig = (variant: 'admin' | 'pos') => {
   if (variant === 'admin') {
     return {
       icon: 'admin_panel_settings',
-      brand: 'Library Admin',
+      brand: '',
       defaultTitle: 'Acceso al Panel Deshabilitado',
       defaultMessage:
         'Esta escuela ha sido deshabilitada por el super administrador. El acceso al panel de administración se encuentra temporalmente restringido. Tus datos permanecen seguros y guardados.',
@@ -15,7 +17,7 @@ const getConfig = (variant: 'admin' | 'pos') => {
   }
   return {
     icon: 'point_of_sale',
-    brand: 'Library POS',
+    brand: '',
     defaultTitle: 'Acceso al POS Deshabilitado',
     defaultMessage:
       'Este punto de venta ha sido deshabilitado por el administrador. El acceso al módulo de ventas se encuentra temporalmente restringido. Tus datos permanecen seguros y guardados.',
@@ -86,7 +88,7 @@ export const DisabledScreen = ({
           </p>
 
           <p className="mt-4 text-center text-xs text-neutral-400">
-            © 2026 Library System · v1.0.0
+            © {currentYear} {config.brand || 'Sistema'} · v1.0.0
           </p>
         </div>
       </div>

@@ -74,7 +74,7 @@ export default function LoginPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary-600 mb-5">
               <span className="text-white text-3xl font-extrabold">C</span>
             </div>
-            <h1 className="text-3xl font-bold text-neutral-900 mb-1">Library Admin</h1>
+            <h1 className="text-3xl font-bold text-neutral-900 mb-1">Administración Central</h1>
             <p className="text-neutral-500">Panel de administración</p>
           </div>
 
@@ -153,7 +153,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-neutral-400">
-          © 2026 Library System · v1.0.0
+          © {new Date().getFullYear()} Panel de Administración
         </p>
         <p className="mt-1 text-center text-xs text-neutral-500">
           ¿Problemas para acceder? Contactá al administrador del sistema.

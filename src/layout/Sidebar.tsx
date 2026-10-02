@@ -1,5 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { useSchool } from "../hooks/useSchool";
 
 const superAdminNav = [
   { to: "/admins", label: "Administradores", icon: "manage_accounts" },
@@ -22,6 +23,7 @@ const adminNav = [
 
 export default function Sidebar() {
   const { user, logout, isSuperAdmin } = useAuth();
+  const { schoolName } = useSchool();
   const nav = isSuperAdmin ? superAdminNav : adminNav;
   const initials = user
     ? user.name
@@ -40,7 +42,7 @@ export default function Sidebar() {
             <span className="material-icons text-white text-lg">inventory_2</span>
           </div>
           <div>
-            <p className="font-bold text-neutral-900 leading-tight">Library Admin</p>
+            <p className="font-bold text-neutral-900 leading-tight">{schoolName}</p>
             <p className="text-xs text-neutral-500">Administración Central</p>
           </div>
         </div>
