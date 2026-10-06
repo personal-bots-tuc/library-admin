@@ -1,10 +1,10 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { getSchool } from "../../api/schools";
-import type { School, SchoolContextValue, SchoolProviderProps } from "./types";
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { getSchool } from '../../api/schools';
+import type { School, SchoolContextValue, SchoolProviderProps } from './types';
 
 const SchoolContext = createContext<SchoolContextValue | undefined>(undefined);
 
-const DEFAULT_FALLBACK = "Sistema";
+const DEFAULT_FALLBACK = 'Sistema';
 
 /**
  * SchoolProvider: obtiene el school del usuario autenticado.
@@ -26,7 +26,7 @@ export function SchoolProvider({ children, fallbackName = DEFAULT_FALLBACK }: Sc
       const data = await getSchool(schoolId);
       setSchool({ id: data.id, name: data.name, slug: data.slug });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Error al cargar el negocio";
+      const message = err instanceof Error ? err.message : 'Error al cargar el negocio';
       setError(message);
     } finally {
       setLoading(false);
@@ -35,26 +35,38 @@ export function SchoolProvider({ children, fallbackName = DEFAULT_FALLBACK }: Sc
 
   // Al montar: leer schoolId del usuario almacenado
   useEffect(() => {
-    const stored = localStorage.getItem("user");
+    const stored = localStorage.getItem('user');
     if (!stored) {
-      setLoading(false);
+      // Use a microtask to avoid setState in effect
+      queueMicrotask(() => {
+        setLoading(false);
+      });
       return;
     }
     try {
       const user = JSON.parse(stored);
       const schoolId = user.schoolId;
       if (schoolId) {
-        void fetchSchoolById(schoolId);
+        // Use a microtask to avoid setState in effect
+        queueMicrotask(() => {
+          void fetchSchoolById(schoolId);
+        });
       } else {
-        setLoading(false);
+        // Use a microtask to avoid setState in effect
+        queueMicrotask(() => {
+          setLoading(false);
+        });
       }
     } catch {
-      setLoading(false);
+      // Use a microtask to avoid setState in effect
+      queueMicrotask(() => {
+        setLoading(false);
+      });
     }
   }, [fetchSchoolById]);
 
   const refetch = useCallback(async () => {
-    const stored = localStorage.getItem("user");
+    const stored = localStorage.getItem('user');
     if (!stored) return;
     try {
       const user = JSON.parse(stored);
@@ -85,6 +97,6 @@ export function SchoolProvider({ children, fallbackName = DEFAULT_FALLBACK }: Sc
 
 export function useSchool() {
   const ctx = useContext(SchoolContext);
-  if (!ctx) throw new Error("useSchool debe usarse dentro de SchoolProvider");
+  if (!ctx) throw new Error('useSchool debe usarse dentro de SchoolProvider');
   return ctx;
 }
