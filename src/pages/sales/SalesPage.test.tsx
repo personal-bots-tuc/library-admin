@@ -44,6 +44,12 @@ vi.mock('../../api/sales', () => ({
     voided: false,
     number: 1,
   }),
+  getSalesSummary: vi.fn().mockResolvedValue({
+    totalSales: 2,
+    totalRevenue: 8000,
+    cashRevenue: 5000,
+    creditRevenue: 3000,
+  }),
   creditNoteSale: vi.fn().mockResolvedValue({ id: 'cn-1', saleId: '1', amount: 2500 }),
 }));
 
