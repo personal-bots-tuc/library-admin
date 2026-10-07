@@ -35,8 +35,13 @@ COPY entrypoint.sh /entrypoint.sh
 COPY public/config.template.js ./config.template.js
 COPY public/health.json ./health.json
 
+# Copiar nginx.conf principal compatible con non-root (pid en /run/nginx)
+COPY nginx-main.conf /etc/nginx/nginx.conf
+
 # Non-root user (nginx user already exists in nginx:alpine base image)
-RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && \
+# Crear directorio /run/nginx con permisos correctos para el usuario nginx
+RUN mkdir -p /run/nginx && chown -R nginx:nginx /run/nginx && \
+    chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /etc/nginx/nginx.conf && \
     chmod +x /entrypoint.sh
 
 USER nginx
