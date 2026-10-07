@@ -35,8 +35,35 @@ COPY entrypoint.sh /entrypoint.sh
 COPY public/config.template.js ./config.template.js
 COPY public/health.json ./health.json
 
+# Crear nginx.conf principal compatible con non-root (pid en /run/nginx) - build time as root
+RUN cat > /etc/nginx/nginx.conf << 'NGINX_EOF'
+worker_processes auto;
+pid /run/nginx/nginx.pid;
+error_log /var/log/nginx/error.log warn;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format main '$remote_addr - $remote_user [$time_local] "$request" '
+                    '$status $body_bytes_sent "$http_referer" '
+                    '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log /var/log/nginx/access.log main;
+
+    sendfile        on;
+    keepalive_timeout 65;
+
+    include /etc/nginx/conf.d/*.conf;
+}
+NGINX_EOF
+
 # Non-root user (nginx user already exists in nginx:alpine base image)
-RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d && \
+RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /etc/nginx/nginx.conf && \
     chmod +x /entrypoint.sh
 
 USER nginx
