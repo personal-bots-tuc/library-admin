@@ -37,6 +37,8 @@ COPY public/health.json ./health.json
 
 # Copiar nginx.conf principal compatible con non-root (pid en /run/nginx)
 COPY nginx-main.conf /etc/nginx/nginx.conf
+# Force cache invalidation for nginx-main.conf copy
+RUN echo "nginx-main.conf copied at $(date)" > /tmp/build-stamp
 
 # Non-root user (nginx user already exists in nginx:alpine base image)
 # Crear directorio /run/nginx con permisos correctos para el usuario nginx
