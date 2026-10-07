@@ -62,8 +62,9 @@ http {
 }
 NGINX_EOF
 
-# Non-root user (nginx user already exists in nginx:alpine base image)
-RUN chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /etc/nginx/nginx.conf && \
+# Crear directorio /run/nginx y dar permisos al usuario nginx (build time as root)
+RUN mkdir -p /run/nginx && chown -R nginx:nginx /run/nginx && \
+    chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /var/log/nginx /etc/nginx/conf.d /etc/nginx/nginx.conf && \
     chmod +x /entrypoint.sh
 
 USER nginx
