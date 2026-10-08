@@ -36,8 +36,8 @@ feature/[ADMIN-XXX]-desc ─PR+CI verde─► develop ─auto-deploy─► STAGI
 
 | Ambiente | Mecanismo | Rama | URL |
 |----------|-----------|------|-----|
-| Staging | Railway (auto-deploy al configurar watcher; fallback manual `railway link -s library-admin -e staging && railway up -d -y` desde `develop`) | `develop` | https://library-admin-staging.up.railway.app |
-| Production | Railway (watcher `main`; fallback manual `railway up -d -y` desde `main`) | `main` | https://library-admin-prod.up.railway.app |
+| Staging | Railway **auto-deploy** (watcher GitHub configurado y verificado 2026-10-08) | `develop` | https://library-admin-staging.up.railway.app |
+| Production | Railway **auto-deploy** (watcher `main`) | `main` | https://library-admin-prod.up.railway.app |
 
 > **Pendiente operativo:** branch watchers de Railway §8 del doc maestro. Mientras no estén, los deploys se disparan manual con el comando indicado.
 
