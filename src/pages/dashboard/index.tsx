@@ -3,13 +3,11 @@ import { formatPercent } from '../../lib/profit';
 import { useDashboard } from './hooks';
 import {
   KpiCard,
-  PaymentMethodBreakdown,
   ProfitabilityCard,
   TopProductsTable,
   LowStockList,
   CreditSummary,
   SkeletonKpi,
-  SkeletonChart,
   SkeletonTable,
   SkeletonCard,
 } from './components';
@@ -29,9 +27,8 @@ export default function DashboardPage() {
           <div className="grid grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => <SkeletonKpi key={i} />)}
           </div>
-          <div className="grid grid-cols-3 gap-6">
-            <div className="col-span-2"><SkeletonChart /></div>
-            <div><SkeletonCard /><SkeletonCard /></div>
+          <div className="grid grid-cols-1 gap-6">
+            <SkeletonCard />
           </div>
           <div className="grid grid-cols-3 gap-6">
             <div className="col-span-2"><SkeletonTable /></div>
@@ -76,12 +73,7 @@ export default function DashboardPage() {
       )}
 
       {!empty && (
-        <div className="grid grid-cols-2 gap-6">
-          <PaymentMethodBreakdown
-            cash={data?.sales.cash ?? 0}
-            transfer={data?.sales.transfer ?? 0}
-            credit={data?.sales.credit ?? 0}
-          />
+        <div className="grid grid-cols-1 gap-6">
           <ProfitabilityCard
             revenue={data?.profitability.revenue ?? 0}
             cogs={data?.profitability.cogs ?? 0}
