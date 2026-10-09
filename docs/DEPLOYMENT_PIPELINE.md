@@ -36,10 +36,22 @@ feature/[ADMIN-XXX]-desc ─PR+CI verde─► develop ─auto-deploy─► STAGI
 
 | Ambiente | Mecanismo | Rama | URL |
 |----------|-----------|------|-----|
-| Staging | Railway **auto-deploy** (watcher GitHub configurado y verificado 2026-10-08) | `develop` | https://library-admin-staging.up.railway.app |
+| Staging | Railway **auto-deploy** (watcher GitHub **NO dispara** — ver §8 doc maestro) | `develop` | https://library-admin-staging.up.railway.app |
 | Production | Railway **auto-deploy** (watcher `main`) | `main` | https://library-admin-prod.up.railway.app |
 
-> **Pendiente operativo:** branch watchers de Railway §8 del doc maestro. Mientras no estén, los deploys se disparan manual con el comando indicado.
+> **Pendiente operativo:** branch watchers de Railway §8 del doc maestro. **NO disparan** (confirmado 2026-10-08). Mientras no estén, los deploys se disparan manual con el procedimiento abajo.
+
+### Deploy manual a Staging (procedimiento correcto)
+
+```bash
+# Desde la rama develop actualizada (worktree limpio de origin/develop)
+cd /path/to/librarySystem/admin
+railway link -s library-admin -e staging -p e9d0ad71-3798-46ef-bda4-12835a37e1c6
+railway up -d -y
+# Verificar: curl https://library-admin-staging.up.railway.app/health
+```
+
+> ⚠️ **GOTCHA crítico:** `railway up` usa el **environment linkeado por defecto** (puede ser `production`). **Siempre** ejecutar `railway link -s <servicio> -e <env>` explícito antes de `railway up`. No asumir el link activo. Ver `railway status -e staging` para confirmar.
 
 Runtime: nginx non-root + `envsubst` en entrypoint genera `config.js` desde `config.template.js` con `VITE_API_BASE_URL`, `VITE_APP_NAME`, `VITE_POS_BASE_URL` (variables Railway por environment).
 
@@ -66,6 +78,6 @@ Railway Dashboard → service `library-admin` → environment → **Deployments 
 1. Nada a `main` sin pasar por `develop` + validación.
 2. Nada a `develop` sin CI verde en PR.
 3. No commitear trabajo ajeno sin autorización.
-4. Nada de `railway up/down` "de prueba" en directorios linkeados.
+4. **Nada de `railway up/down` sin `railway link -e <env>` explícito previo.**
 5. Commits: `[ADMIN-XXX]-descripcion` (husky lo exige).
 6. Merge a `main` requiere 1 aprobación (bypass admin solo en bootstrap documentado).
