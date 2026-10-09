@@ -13,12 +13,6 @@ export interface BarChartProps {
   className?: string;
 }
 
-export interface PaymentMethodBreakdownProps {
-  cash: number;
-  transfer: number;
-  credit: number;
-}
-
 export interface ProfitabilityCardProps {
   revenue: number;
   cogs: number;
