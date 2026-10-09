@@ -36,22 +36,10 @@ feature/[ADMIN-XXX]-desc ─PR+CI verde─► develop ─auto-deploy─► STAGI
 
 | Ambiente | Mecanismo | Rama | URL |
 |----------|-----------|------|-----|
-| Staging | Railway **auto-deploy** (watcher GitHub **NO dispara** — ver §8 doc maestro) | `develop` | https://library-admin-staging.up.railway.app |
-| Production | Railway **auto-deploy** (watcher `main`) | `main` | https://library-admin-prod.up.railway.app |
+| Staging | Railway **auto-deploy** (watcher GitHub **configurado y verificado 2026-10-08**) | `develop` | https://library-admin-staging.up.railway.app |
+| Production | Railway **auto-deploy** (watcher `main` **configurado y verificado 2026-10-08**) | `main` | https://library-admin-prod.up.railway.app |
 
-> **Pendiente operativo:** branch watchers de Railway §8 del doc maestro. **NO disparan** (confirmado 2026-10-08). Mientras no estén, los deploys se disparan manual con el procedimiento abajo.
-
-### Deploy manual a Staging (procedimiento correcto)
-
-```bash
-# Desde la rama develop actualizada (worktree limpio de origin/develop)
-cd /path/to/librarySystem/admin
-railway link -s library-admin -e staging -p e9d0ad71-3798-46ef-bda4-12835a37e1c6
-railway up -d -y
-# Verificar: curl https://library-admin-staging.up.railway.app/health
-```
-
-> ⚠️ **GOTCHA crítico:** `railway up` usa el **environment linkeado por defecto** (puede ser `production`). **Siempre** ejecutar `railway link -s <servicio> -e <env>` explícito antes de `railway up`. No asumir el link activo. Ver `railway status -e staging` para confirmar.
+> **Watchers operativos:** branch watchers configurados en Railway Dashboard (staging→`develop`, production→`main`). Validado con push trivial a `develop` → auto-deploy staging confirmado.
 
 Runtime: nginx non-root + `envsubst` en entrypoint genera `config.js` desde `config.template.js` con `VITE_API_BASE_URL`, `VITE_APP_NAME`, `VITE_POS_BASE_URL` (variables Railway por environment).
 
