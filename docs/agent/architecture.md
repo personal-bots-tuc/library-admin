@@ -18,9 +18,12 @@ scope:
 src/
 ├── pages/           # Page components (route-level)
 │   ├── dashboard/   # Dashboard + widgets
-│   ├── products/    # Products CRUD + Preciero (PriceLabels)
+│   ├── products/    # Products CRUD + Preciero + impresión de listado
 │   │   ├── ProductsLayout.tsx      # Tabs "Listado" | "Preciero" + <Outlet>
-│   │   ├── ProductsListPage.tsx    # Listado paginado (useProducts)
+│   │   ├── ProductsListPage.tsx    # Listado paginado (useProducts) + botón imprimir (modal columnas)
+│   │   ├── components/
+│   │   │   └── PrintReportModal/       # Selector de columnas (default sin costo/margen)
+│   │   ├── utils/printProductsReport.ts # Reporte A4 portrait (fetch all + registry de columnas + HTML print)
 │   │   └── PriceLabelsPage/        # Preciero: etiquetas A4 10/20/30
 │   │       ├── PriceLabelsPage.tsx
 │   │       ├── components/         # PriceLabelsTable, PresetSelector, LabelPreview, etc.
@@ -32,14 +35,21 @@ src/
 │   ├── credits/     # Credits/debts management
 │   ├── cash-register/ # Cash shifts + movements
 │   ├── schools/     # Schools multi-tenant
+│   ├── settings/    # Global settings
+│   │   ├── ConfigPage.tsx          # Orquestador declarativo
+│   │   └── hooks/useSettingsConfig/ # Estado de settings (load/save/discard)
 │   ├── users/       # Users + admins
-│   ├── bots/        # Bots config + metrics
 │   └── settings/    # Global settings
 ├── components/      # Shared presentational components
 ├── hooks/           # Shared logic hooks (state, effects)
+│   ├── useAuth.jsx  # Auth context (JWT, roles)
+│   ├── useSchool/   # School context + schoolName con fallback chain
+│   │                #   (school.name → settings.labelBusinessName → 'Mi Negocio')
 │   ├── useProducts/      # Listado paginado server-side (debounce, filtros, sort)
 │   └── useAllProducts/   # Catálogo completo client-side (loop limit=100)
 ├── api/             # API client + endpoint wrappers
+│   ├── settings/    # Settings (JSON genérico; incluye labelBusinessName)
+│   └── products/    # Products (list/counts/CRUD)
 ├── test/            # Test utilities + setup
 └── main.tsx         # App bootstrap
 ```
