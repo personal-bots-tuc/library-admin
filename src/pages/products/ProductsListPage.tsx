@@ -1,10 +1,9 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Modal from "../../components/Modal";
 import CreateProductModal from "../../components/CreateProductModal";
 import { money } from "../../lib/format";
 import { unitMarginPercent, formatPercent } from "../../lib/profit";
-import { getProductCounts, deleteProduct } from "../../api/products";
-import type { Product } from "../../api/products";
+import { getProductCounts, deleteProduct, type Product } from "../../api/products";
 import { useProducts } from "../../hooks/useProducts";
 
 type TypeFilter = "all" | "product" | "service";
@@ -46,6 +45,7 @@ export default function ProductsListPage() {
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Product | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const isInitialMountRef = useRef(true);
 
   // Fetch summary counts
   const fetchSummaryCounts = useCallback(async () => {
@@ -62,7 +62,12 @@ export default function ProductsListPage() {
   }, []);
 
   useEffect(() => {
-    fetchSummaryCounts();
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      fetchSummaryCounts();
+    } else {
+      fetchSummaryCounts();
+    }
   }, [fetchSummaryCounts, refreshTrigger]);
 
   const handleTypeFilterChange = useCallback((value: TypeFilter) => {
@@ -97,9 +102,8 @@ export default function ProductsListPage() {
       await deleteProduct(product.id);
       await refetch();
       setRefreshTrigger((t) => t + 1);
-    } catch (err: unknown) {
+    } catch {
       // Error handled by hook
-      console.error(err);
     } finally {
       setDeleteTarget(null);
     }
@@ -285,14 +289,7 @@ export default function ProductsListPage() {
           >
             <span className="material-icons text-sm">chevron_left</span>
           </button>
-          {Array.from({ length: totalPages }).map((_, i) => {
-            const n = i + 1;
-            if (totalPages > 7 && n < page - 2) return n === 1 ? <PageBtn key={n} n={n} current={page} onClick={() => handlePageChange(n)} /> : null;
-            if (totalPages > 7 && n > page + 2) return n === totalPages ? <PageBtn key={n} n={n} current={page} onClick={() => handlePageChange(n)} /> : null;
-            if (totalPages > 7 && n === page - 2) return <span key="start-ellipsis" className="px-1">…</span>;
-            if (totalPages > 7 && n === page + 2 && n !== totalPages) return <span key="end-ellipsis" className="px-1">…</span>;
-            return <PageBtn key={n} n={n} current={page} onClick={() => handlePageChange(n)} />;
-          })}
+          {renderPageNumbers(totalPages, page, handlePageChange)}
           <button
             onClick={() => handlePageChange(Math.min(totalPages, page + 1))}
             disabled={page === totalPages || loading}
@@ -340,6 +337,49 @@ function SummaryCard({ icon, iconColor, title, value }: {
       </div>
     </div>
   );
+}
+
+type PageClickHandler = (_p: number) => void;
+
+function shouldShowPage(n: number, totalPages: number, currentPage: number): boolean {
+  if (totalPages <= 7) return true;
+  if (n === 1 || n === totalPages) return true;
+  if (n >= currentPage - 2 && n <= currentPage + 2) return true;
+  return false;
+}
+
+function shouldShowStartEllipsis(n: number, totalPages: number, currentPage: number): boolean {
+  return totalPages > 7 && n === currentPage - 2 && n !== 1;
+}
+
+function shouldShowEndEllipsis(n: number, totalPages: number, currentPage: number): boolean {
+  return totalPages > 7 && n === currentPage + 2 && n !== totalPages;
+}
+
+function renderPageNumbers(
+  totalPages: number,
+  currentPage: number,
+  onPageClick: PageClickHandler
+): React.ReactNode {
+  if (totalPages <= 1) return null;
+
+  const pages: React.ReactNode[] = [];
+
+  for (let n = 1; n <= totalPages; n++) {
+    if (!shouldShowPage(n, totalPages, currentPage)) continue;
+
+    if (shouldShowStartEllipsis(n, totalPages, currentPage)) {
+      pages.push(<span key="start-ellipsis" className="px-1">…</span>);
+      continue;
+    }
+    if (shouldShowEndEllipsis(n, totalPages, currentPage)) {
+      pages.push(<span key="end-ellipsis" className="px-1">…</span>);
+      continue;
+    }
+    pages.push(<PageBtn key={n} n={n} current={currentPage} onClick={() => onPageClick(n)} />);
+  }
+
+  return pages;
 }
 
 function PageBtn({ n, current, onClick }: { n: number; current: number; onClick: () => void }) {
