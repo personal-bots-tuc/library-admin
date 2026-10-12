@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Products: botón "Imprimir listado"** — Genera reporte A4 portrait (tabla Producto/Código/Tipo/Precio/Costo/Margen/Stock) tomando TODOS los ítems de los filtros activos (búsqueda, tipo, solo stock bajo, orden). `src/pages/products/utils/printProductsReport.ts` + botón en toolbar del listado. Nombre del negocio en header via `useSchool().schoolName`.
 - **Settings: `labelBusinessName`** — Campo nuevo en Configuración → General para personalizar el nombre mostrado en etiquetas/impresiones. Fallback chain centralizado en `useSchool`: `school.name → settings.labelBusinessName → 'Mi Negocio'`. Tests de la cadena completa (`src/hooks/useSchool.test.tsx`).
+- **Products: Preciero/PriceLabels tab** — Nueva pestaña en `/products/preciero` para impresión de etiquetas de precios en hojas A4 con presets 10/20/30 etiquetas por hoja, vista previa live y selección con cantidad configurable por producto. [ADMIN-105]
+- **Hooks: useProducts / useAllProducts** — Hooks reutilizables para listado paginado (server-side) y catálogo completo (client-side, loop limit=100). Tests ≥80% coverage.
+- **Routing anidado en Products** — `ProductsLayout` con tabs "Listado" | "Preciero" + `<Outlet>`, extracción de `ProductsListPage` desde `ProductsPage` original.
 - Pipeline staging→production: workflow `smoke-staging.yml` (smoke tests automáticos post-deploy en staging), checklist de validación manual obligatorio (`docs/STAGING_VALIDATION_CHECKLIST.md`), PR template con sección RELEASE, branch protection (`develop`/`main`) y GitHub Environments (`staging`/`production`). [[ADMIN-100](https://github.com/personal-bots-tuc/library-admin/pull/2)], [[#3](https://github.com/personal-bots-tuc/library-admin/pull/3)]
 - `docs/DEPLOYMENT_PIPELINE.md` — fuente de verdad del mecanismo de deploy de este repo. [ADMIN-102](https://github.com/personal-bots-tuc/library-admin/pull/5)
 

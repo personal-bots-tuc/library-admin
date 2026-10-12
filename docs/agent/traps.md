@@ -86,3 +86,8 @@ update_when: when new non-obvious behavior is confirmed
 **Problema**: `railway up` usa el **environment linkeado por defecto** en el directorio (puede ser `production`), no el que uno asume. Ejecutar `railway up` sin `railway link -e <env>` explícito previo puede deployar a producción accidentalmente (ocurrió en ADMIN-104).
 **Solución**: **Siempre** ejecutar `railway link -s <servicio> -e <env> -p <project-id>` antes de `railway up`. Verificar con `railway status -e <env>` que el link apunta al entorno correcto.
 **Evidencia**: ADMIN-104 deploy accidental a producción; doc maestro §8 y `docs/DEPLOYMENT_PIPELINE.md` actualizados con procedimiento explícito.
+
+## Preciero/PriceLabels — useAllProducts Loop Limit (2026-10-12)
+**Problema**: `useAllProducts` hace loop `limit=100` hasta `totalPages` para traer catálogo completo. Si catálogo >10k productos, la carga inicial puede tardar >5s y consumir memoria.
+**Solución**: Para catálogos grandes, evaluar endpoint bulk en backend (`GET /products/bulk?ids=...` o export) y migrar hook. Mientras tanto, hook cachea en memoria durante la sesión.
+**Evidencia**: `src/hooks/useAllProducts/index.tsx` + `src/pages/products/PriceLabelsPage/PriceLabelsPage.tsx`.

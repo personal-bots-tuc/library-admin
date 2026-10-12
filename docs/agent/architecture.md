@@ -18,11 +18,19 @@ scope:
 src/
 ├── pages/           # Page components (route-level)
 │   ├── dashboard/   # Dashboard + widgets
-│   ├── products/    # Products CRUD + impresión de listado
-│   │   ├── ProductsPage.tsx        # Orquestador (tabla + filtros + botón imprimir)
-│   │   ├── hooks/useProductsList.ts   # Listado paginado server-side + sumarios
+│   ├── products/    # Products CRUD + Preciero + impresión de listado
+│   │   ├── ProductsLayout.tsx      # Tabs "Listado" | "Preciero" + <Outlet>
+│   │   ├── ProductsListPage.tsx    # Listado paginado (useProducts) + botón imprimir
+│   │   ├── ProductsPage.tsx        # LEGACY: mantener por ahora (marker de conflicto)
+│   │   ├── hooks/useProductsList.ts   # Listado paginado server-side + sumarios refactorizado
 │   │   ├── components/Pagination/  # Paginación con ellipsis
-│   │   └── utils/printProductsReport.ts # Reporte A4 portrait (fetch all + HTML print)
+│   │   ├── utils/printProductsReport.ts # Reporte A4 portrait (fetch all + HTML print)
+│   │   └── PriceLabelsPage/        # Preciero: etiquetas A4 10/20/30
+│   │       ├── PriceLabelsPage.tsx
+│   │       ├── components/         # PriceLabelsTable, PresetSelector, LabelPreview, etc.
+│   │       ├── hooks/usePriceLabelsSelection.ts
+│   │       ├── utils/printLabels.ts # window.open + inline CSS (patrón printTicket)
+│   │       └── types.ts
 │   ├── clients/     # Clients CRUD
 │   ├── sales/       # Sales + credit notes
 │   ├── credits/     # Credits/debts management
@@ -36,8 +44,10 @@ src/
 ├── components/      # Shared presentational components
 ├── hooks/           # Shared logic hooks (state, effects)
 │   ├── useAuth.jsx  # Auth context (JWT, roles)
-│   └── useSchool/   # School context + schoolName con fallback chain
-│                    #   (school.name → settings.labelBusinessName → 'Mi Negocio')
+│   ├── useSchool/   # School context + schoolName con fallback chain
+│   │                #   (school.name → settings.labelBusinessName → 'Mi Negocio')
+│   ├── useProducts/      # Listado paginado server-side (debounce, filtros, sort)
+│   └── useAllProducts/   # Catálogo completo client-side (loop limit=100)
 ├── api/             # API client + endpoint wrappers
 │   ├── settings/    # Settings (JSON genérico; incluye labelBusinessName)
 │   └── products/    # Products (list/counts/CRUD)
