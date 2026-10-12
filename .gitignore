@@ -15,6 +15,7 @@ scripts
 Thumbs.db
 
 # IDE
+coverage/
 .vscode/
 .idea/
 *.swp
