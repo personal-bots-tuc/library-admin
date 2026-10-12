@@ -68,6 +68,20 @@ update_when: when new non-obvious behavior is confirmed
 **Solución**: Nuevos archivos deben cumplir umbrales; legacy documentado en `traps.md` con plan de mejora.
 **Evidencia**: `vitest.config.ts` thresholds configurados.
 
+## ESLint: regla base `no-unused-vars` vs TypeScript (2026-10-12)
+**Problema**: Tener activas `no-unused-vars` (base) y `@typescript-eslint/no-unused-vars` a la vez dispara **falsospositivos** en firmas de tipos TS (`interface { fn: (_x: T) => void }`) que ni `// eslint-disable` ni prefijo `_` apagan.
+**Solución**: `no-unused-vars: 'off'` en `eslint.config.js` — la regla TS la reemplaza (recomendación oficial de typescript-eslint).
+**Evidencia**: ADMIN-108, warnings persistentes en `src/hooks/useSchool/types.ts` antes del fix.
+
+## Impresión de listados — fetch all y nombre de negocio (2026-10-12)
+**Problema (1)**: El print del listado necesita TODOS los productos filtrados, no solo la página actual. **Solución**: `fetchAllProducts` itera páginas con `limit=100` y safety cap de 50 páginas (`utils/printProductsReport.ts`).
+**Problema (2)**: Nombre de negocio en impresiones no puede depender de fallbacks locales dispersos. **Solución**: fallback chain único en `useSchool` (`school.name → settings.labelBusinessName → 'Mi Negocio'`). NO usar `school.name` directo en componentes de impresión.
+**Evidencia**: `src/hooks/useSchool/index.tsx`, `src/pages/products/ProductsPage.tsx` (botón Imprimir listado).
+
+## `lint:ci` solo linta archivos del último commit
+**Problema**: Archivos legacy acumulan errores ESLint invisibles hasta que alguien los toca (falla el propio commit). Regla: quien modifica un archivo errado lo corrige en el mismo cambio.
+**Evidencia**: `ProductsPage.tsx` tenía 5 errores pre-existentes (complejidad, `any`, duplicate-imports, setState-in-effect) detectados al agregar el botón de impresión (ADMIN-108).
+
 ## Railway Deploy Manual — Environment Link Gotcha (2026-10-08)
 **Problema**: `railway up` usa el **environment linkeado por defecto** en el directorio (puede ser `production`), no el que uno asume. Ejecutar `railway up` sin `railway link -e <env>` explícito previo puede deployar a producción accidentalmente (ocurrió en ADMIN-104).
 **Solución**: **Siempre** ejecutar `railway link -s <servicio> -e <env> -p <project-id>` antes de `railway up`. Verificar con `railway status -e <env>` que el link apunta al entorno correcto.

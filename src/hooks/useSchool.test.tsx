@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
-import { renderWithAdminProviders } from '../test/utils';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, waitFor } from '@testing-library/react';
 import { useSchool, SchoolProvider } from './useSchool';
+import { getSettings, type Settings } from '../api/settings';
 
 // Mock the schools API
-vi.mock('../../api/schools', () => ({
+vi.mock('../api/schools', () => ({
   getSchool: vi
     .fn()
     .mockResolvedValue({ id: 'school-1', name: 'Escuela Test', slug: 'escuela-test' }),
@@ -12,6 +13,25 @@ vi.mock('../../api/schools', () => ({
   updateSchool: vi.fn(),
   deleteSchool: vi.fn(),
 }));
+
+// Mock the settings API (used by fallback chain)
+vi.mock('../api/settings', () => ({
+  getSettings: vi.fn(),
+  updateSettings: vi.fn(),
+}));
+
+const mockGetSettings = vi.mocked(getSettings);
+
+const BASE_SETTINGS: Settings = {
+  libraryName: 'Biblioteca',
+  currency: 'ARS',
+  language: 'es',
+  dateFormat: 'DD/MM/YYYY',
+  defaultClient: 'CF',
+  maxDiscountPerSeller: 10,
+  allowSaleWithoutStock: false,
+  scanSound: false,
+};
 
 const TestComponent = () => {
   const school = useSchool();
@@ -24,39 +44,62 @@ const TestComponent = () => {
 };
 
 describe('useSchool', () => {
-  it('provides school context with fallback name', () => {
-    const { getByTestId } = renderWithAdminProviders(
+  beforeEach(() => {
+    localStorage.clear();
+    vi.clearAllMocks();
+    mockGetSettings.mockResolvedValue(BASE_SETTINGS);
+  });
+
+  it('provides school context with custom fallback name', async () => {
+    const { getByTestId } = render(
       <SchoolProvider fallbackName="Fallback">
         <TestComponent />
       </SchoolProvider>
     );
     expect(getByTestId('school-name')).toHaveTextContent('Fallback');
-    // The loading state is set to false via queueMicrotask, so we need to wait
-    return new Promise(resolve => setTimeout(resolve, 0)).then(() => {
+    await waitFor(() => {
       expect(getByTestId('loading')).toHaveTextContent('not-loading');
     });
   });
 
-  it('loads school from localStorage user', async () => {
+  it('prioritizes school.name over settings.labelBusinessName', async () => {
     localStorage.setItem('user', JSON.stringify({ schoolId: 'school-1' }));
-    const { findByTestId } = renderWithAdminProviders(
+    mockGetSettings.mockResolvedValue({ ...BASE_SETTINGS, labelBusinessName: 'Etiquetas SA' });
+
+    const { findByTestId } = render(
       <SchoolProvider fallbackName="Test">
         <TestComponent />
       </SchoolProvider>
     );
-    await findByTestId('school-name');
-    // The mock may not be applied in test environment, so check for fallback
-    expect(await findByTestId('school-name')).toHaveTextContent('Test');
-    expect(await findByTestId('loading')).toHaveTextContent('not-loading');
+
+    await waitFor(async () => {
+      expect(await findByTestId('school-name')).toHaveTextContent('Escuela Test');
+    });
   });
 
-  it('shows fallback when no user in localStorage', () => {
-    localStorage.clear();
-    const { getByTestId } = renderWithAdminProviders(
-      <SchoolProvider fallbackName="No User">
+  it('uses settings.labelBusinessName when school has no name', async () => {
+    localStorage.clear(); // sin school → school.name es undefined
+    mockGetSettings.mockResolvedValue({ ...BASE_SETTINGS, labelBusinessName: 'Sucursal Centro' });
+
+    const { findByTestId } = render(
+      <SchoolProvider fallbackName="Test">
         <TestComponent />
       </SchoolProvider>
     );
-    expect(getByTestId('school-name')).toHaveTextContent('No User');
+
+    expect(await findByTestId('school-name')).toHaveTextContent('Sucursal Centro');
+  });
+
+  it('falls back to fallbackName when neither school name nor labelBusinessName exist', async () => {
+    localStorage.clear();
+    mockGetSettings.mockRejectedValue(new Error('offline'));
+
+    const { findByTestId } = render(
+      <SchoolProvider fallbackName="Mi Negocio">
+        <TestComponent />
+      </SchoolProvider>
+    );
+
+    expect(await findByTestId('school-name')).toHaveTextContent('Mi Negocio');
   });
 });

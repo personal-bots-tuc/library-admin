@@ -1,67 +1,9 @@
-import { useState, useEffect } from "react";
-import { getSettings, updateSettings, type Settings } from "../../api/settings";
+import { type Settings } from '../../api/settings';
+import { useSettingsConfig } from './hooks/useSettingsConfig';
 
 export default function ConfigPage() {
-  const [settings, setSettings] = useState<Settings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const data = await getSettings();
-        setSettings(data);
-      } catch (err) {
-        console.error(err);
-        setError("Error al cargar la configuración.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
-
-  const handleChange = (field: keyof Settings, value: string | boolean | number) => {
-    if (settings) {
-      setSettings({ ...settings, [field]: value });
-      setSuccess(false);
-      setError("");
-    }
-  };
-
-  const handleSave = async () => {
-    if (!settings) return;
-    setSaving(true);
-    setError("");
-    setSuccess(false);
-    try {
-      const data = await updateSettings(settings);
-      setSettings(data);
-      setSuccess(true);
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      console.error(err);
-      setError("Error al guardar la configuración.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDiscard = async () => {
-    setLoading(true);
-    setError("");
-    setSuccess(false);
-    try {
-      const data = await getSettings();
-      setSettings(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { settings, loading, saving, error, success, handleChange, handleSave, handleDiscard } =
+    useSettingsConfig();
 
   if (loading || !settings) {
     return (
@@ -94,19 +36,38 @@ export default function ConfigPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Nombre de la Biblioteca</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              Nombre de la Biblioteca
+            </label>
             <input
               type="text"
               value={settings.libraryName}
-              onChange={(e) => handleChange("libraryName", e.target.value)}
+              onChange={e => handleChange('libraryName', e.target.value)}
               className="w-full px-4 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Moneda Principal</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              Nombre para etiquetas/impresiones
+            </label>
+            <input
+              type="text"
+              value={settings.labelBusinessName ?? ''}
+              onChange={e => handleChange('labelBusinessName', e.target.value)}
+              placeholder="Ej: Mi Negocio, Sucursal Centro"
+              className="w-full px-4 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+            />
+            <p className="text-xs text-neutral-500 mt-1">
+              Si se deja vacío, usa el nombre de la escuela. Fallback: "Mi Negocio"
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              Moneda Principal
+            </label>
             <select
               value={settings.currency}
-              onChange={(e) => handleChange("currency", e.target.value)}
+              onChange={e => handleChange('currency', e.target.value)}
               className="w-full px-4 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white transition-shadow"
             >
               <option value="ARS - Peso Argentino">ARS - Peso Argentino</option>
@@ -118,7 +79,7 @@ export default function ConfigPage() {
             <label className="block text-sm font-medium text-neutral-700 mb-1.5">Idioma</label>
             <select
               value={settings.language}
-              onChange={(e) => handleChange("language", e.target.value)}
+              onChange={e => handleChange('language', e.target.value)}
               className="w-full px-4 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white transition-shadow"
             >
               <option value="Español (Argentina)">Español (Argentina)</option>
@@ -126,10 +87,12 @@ export default function ConfigPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Formato de Fecha</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              Formato de Fecha
+            </label>
             <select
               value={settings.dateFormat}
-              onChange={(e) => handleChange("dateFormat", e.target.value)}
+              onChange={e => handleChange('dateFormat', e.target.value)}
               className="w-full px-4 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white transition-shadow"
             >
               <option value="DD/MM/YYYY">DD/MM/YYYY</option>
@@ -149,63 +112,44 @@ export default function ConfigPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Cliente por defecto</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              Cliente por defecto
+            </label>
             <input
               type="text"
               value={settings.defaultClient}
-              onChange={(e) => handleChange("defaultClient", e.target.value)}
+              onChange={e => handleChange('defaultClient', e.target.value)}
               className="w-full px-4 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-700 mb-1.5">Descuento máximo por vendedor (%)</label>
+            <label className="block text-sm font-medium text-neutral-700 mb-1.5">
+              Descuento máximo por vendedor (%)
+            </label>
             <input
               type="number"
               min="0"
               max="100"
               value={settings.maxDiscountPerSeller}
-              onChange={(e) => handleChange("maxDiscountPerSeller", Number(e.target.value))}
+              onChange={e => handleChange('maxDiscountPerSeller', Number(e.target.value))}
               className="w-full px-4 py-2 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
             />
           </div>
         </div>
 
-        <div className="space-y-6">
-          <div className="flex items-center justify-between py-1">
-            <div>
-              <p className="text-sm font-semibold text-neutral-900">Permitir venta sin stock</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Habilita vender productos aunque el inventario sea 0 o negativo.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleChange("allowSaleWithoutStock", !settings.allowSaleWithoutStock)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.allowSaleWithoutStock ? "bg-blue-600" : "bg-neutral-300"
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${settings.allowSaleWithoutStock ? "translate-x-6" : "translate-x-1"}`}>
-                {settings.allowSaleWithoutStock && <span className="material-icons text-[10px] text-blue-600 absolute inset-0 flex items-center justify-center font-bold">check</span>}
-              </span>
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between py-1">
-            <div>
-              <p className="text-sm font-semibold text-neutral-900">Sonido de confirmación</p>
-              <p className="text-xs text-neutral-500 mt-0.5">Emitir sonido al escanear o concretar venta.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => handleChange("scanSound", !settings.scanSound)}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                settings.scanSound ? "bg-blue-600" : "bg-neutral-300"
-              }`}
-            >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${settings.scanSound ? "translate-x-6" : "translate-x-1"}`}>
-                {settings.scanSound && <span className="material-icons text-[10px] text-blue-600 absolute inset-0 flex items-center justify-center font-bold">check</span>}
-              </span>
-            </button>
-          </div>
+        <ToggleRow
+          title="Permitir venta sin stock"
+          description="Habilita vender productos aunque el inventario sea 0 o negativo."
+          checked={settings.allowSaleWithoutStock}
+          onToggle={() => handleChange('allowSaleWithoutStock', !settings.allowSaleWithoutStock)}
+        />
+        <div className="space-y-6 mt-6">
+          <ToggleRow
+            title="Sonido de confirmación"
+            description="Emitir sonido al escanear o concretar venta."
+            checked={settings.scanSound}
+            onToggle={() => handleChange('scanSound', !settings.scanSound)}
+          />
         </div>
       </div>
 
@@ -230,13 +174,64 @@ export default function ConfigPage() {
           className="px-6 py-2.5 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
         >
           {saving ? (
-             <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-             </svg>
-          ) : "Guardar configuración"}
+            <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+          ) : (
+            'Guardar configuración'
+          )}
         </button>
       </div>
     </div>
   );
 }
+
+interface ToggleRowProps {
+  title: string;
+  description: string;
+  checked: boolean;
+  onToggle: () => void;
+}
+
+function ToggleRow({ title, description, checked, onToggle }: ToggleRowProps) {
+  return (
+    <div className="flex items-center justify-between py-1">
+      <div>
+        <p className="text-sm font-semibold text-neutral-900">{title}</p>
+        <p className="text-xs text-neutral-500 mt-0.5">{description}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onToggle}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+          checked ? 'bg-blue-600' : 'bg-neutral-300'
+        }`}
+      >
+        <span
+          className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${checked ? 'translate-x-6' : 'translate-x-1'}`}
+        >
+          {checked && (
+            <span className="material-icons text-[10px] text-blue-600 absolute inset-0 flex items-center justify-center font-bold">
+              check
+            </span>
+          )}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+// Re-exporta el tipo para conveniencia de consumidores
+export type { Settings };

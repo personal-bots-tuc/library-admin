@@ -1,5 +1,3 @@
-import type { ReactNode } from "react";
-
 export interface School {
   id: string;
   name: string;
@@ -12,11 +10,10 @@ export interface SchoolContextValue {
   loading: boolean;
   error: string | null;
   refetch: () => Promise<void>;
-  setSchoolFromLogin: (_school: School) => void;
+  setSchoolFromLogin: (school: School) => void;
 }
 
 export interface SchoolProviderProps {
-  children: ReactNode;
-  /** Fallback si no hay school cargada */
+  children: React.ReactNode;
   fallbackName?: string;
 }

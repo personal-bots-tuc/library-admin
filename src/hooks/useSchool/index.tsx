@@ -1,21 +1,24 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getSchool } from '../../api/schools';
+import { getSettings } from '../../api/settings';
 import type { School, SchoolContextValue, SchoolProviderProps } from './types';
 
 const SchoolContext = createContext<SchoolContextValue | undefined>(undefined);
 
-const DEFAULT_FALLBACK = 'Sistema';
+const DEFAULT_FALLBACK = 'Mi Negocio';
 
 /**
- * SchoolProvider: obtiene el school del usuario autenticado.
+ * SchoolProvider: obtiene el school del usuario autenticado y settings para fallback chain.
  *
  * Estrategia:
  * - El user logueado tiene `schoolId` en su profile
- * - Al montar, limpiamos del storage y hacemos fetch del school por ID
+ * - Al montar, hacemos fetch del school por ID
  * - Los datos se cachean en memoria durante la sesión
+ * - Fetch de settings para labelBusinessName (fallback chain)
  */
 export function SchoolProvider({ children, fallbackName = DEFAULT_FALLBACK }: SchoolProviderProps) {
   const [school, setSchool] = useState<School | null>(null);
+  const [settings, setSettings] = useState<{ labelBusinessName?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,6 +34,13 @@ export function SchoolProvider({ children, fallbackName = DEFAULT_FALLBACK }: Sc
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Fetch settings para labelBusinessName (fallback chain)
+  useEffect(() => {
+    getSettings()
+      .then(setSettings)
+      .catch(() => setSettings(null));
   }, []);
 
   // Al montar: leer schoolId del usuario almacenado
@@ -76,16 +86,17 @@ export function SchoolProvider({ children, fallbackName = DEFAULT_FALLBACK }: Sc
     }
   }, [fetchSchoolById]);
 
-  const setSchoolFromLogin = useCallback((school: School) => {
-    setSchool(school);
+  const setSchoolFromLogin = useCallback((newSchool: School) => {
+    setSchool(newSchool);
     setLoading(false);
   }, []);
 
-  const schoolName = school?.name ?? fallbackName;
+  // Fallback Chain (Single Source of Truth): school.name → settings.labelBusinessName → fallback
+  const businessName = school?.name ?? settings?.labelBusinessName ?? fallbackName;
 
   const value: SchoolContextValue = {
     school,
-    schoolName,
+    schoolName: businessName,
     loading,
     error,
     refetch,

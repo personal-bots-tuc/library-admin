@@ -18,18 +18,29 @@ scope:
 src/
 ├── pages/           # Page components (route-level)
 │   ├── dashboard/   # Dashboard + widgets
-│   ├── products/    # Products CRUD
+│   ├── products/    # Products CRUD + impresión de listado
+│   │   ├── ProductsPage.tsx        # Orquestador (tabla + filtros + botón imprimir)
+│   │   ├── hooks/useProductsList.ts   # Listado paginado server-side + sumarios
+│   │   ├── components/Pagination/  # Paginación con ellipsis
+│   │   └── utils/printProductsReport.ts # Reporte A4 portrait (fetch all + HTML print)
 │   ├── clients/     # Clients CRUD
 │   ├── sales/       # Sales + credit notes
 │   ├── credits/     # Credits/debts management
 │   ├── cash-register/ # Cash shifts + movements
 │   ├── schools/     # Schools multi-tenant
+│   ├── settings/    # Global settings
+│   │   ├── ConfigPage.tsx          # Orquestador declarativo
+│   │   └── hooks/useSettingsConfig/ # Estado de settings (load/save/discard)
 │   ├── users/       # Users + admins
-│   ├── bots/        # Bots config + metrics
 │   └── settings/    # Global settings
 ├── components/      # Shared presentational components
 ├── hooks/           # Shared logic hooks (state, effects)
+│   ├── useAuth.jsx  # Auth context (JWT, roles)
+│   └── useSchool/   # School context + schoolName con fallback chain
+│                    #   (school.name → settings.labelBusinessName → 'Mi Negocio')
 ├── api/             # API client + endpoint wrappers
+│   ├── settings/    # Settings (JSON genérico; incluye labelBusinessName)
+│   └── products/    # Products (list/counts/CRUD)
 ├── test/            # Test utilities + setup
 └── main.tsx         # App bootstrap
 ```

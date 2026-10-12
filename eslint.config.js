@@ -39,7 +39,9 @@ export default tseslint.config(
       'no-duplicate-imports': 'error',
       'prefer-const': 'error',
       'no-var': 'error',
-      'no-unused-vars': 'warn',
+      // Base rule OFF — typescript-eslint rule replaces it (official recommendation).
+      // Keeping both active causes false positives on TS function-type signatures.
+      'no-unused-vars': 'off',
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': 'error',

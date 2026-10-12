@@ -8,4 +8,5 @@ export interface Settings {
   maxDiscountPerSeller: number;
   allowSaleWithoutStock: boolean;
   scanSound: boolean;
+  labelBusinessName?: string;
 }
