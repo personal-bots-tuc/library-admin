@@ -18,7 +18,15 @@ scope:
 src/
 ├── pages/           # Page components (route-level)
 │   ├── dashboard/   # Dashboard + widgets
-│   ├── products/    # Products CRUD
+│   ├── products/    # Products CRUD + Preciero (PriceLabels)
+│   │   ├── ProductsLayout.tsx      # Tabs "Listado" | "Preciero" + <Outlet>
+│   │   ├── ProductsListPage.tsx    # Listado paginado (useProducts)
+│   │   └── PriceLabelsPage/        # Preciero: etiquetas A4 10/20/30
+│   │       ├── PriceLabelsPage.tsx
+│   │       ├── components/         # PriceLabelsTable, PresetSelector, LabelPreview, etc.
+│   │       ├── hooks/usePriceLabelsSelection.ts
+│   │       ├── utils/printLabels.ts # window.open + inline CSS (patrón printTicket)
+│   │       └── types.ts
 │   ├── clients/     # Clients CRUD
 │   ├── sales/       # Sales + credit notes
 │   ├── credits/     # Credits/debts management
@@ -29,6 +37,8 @@ src/
 │   └── settings/    # Global settings
 ├── components/      # Shared presentational components
 ├── hooks/           # Shared logic hooks (state, effects)
+│   ├── useProducts/      # Listado paginado server-side (debounce, filtros, sort)
+│   └── useAllProducts/   # Catálogo completo client-side (loop limit=100)
 ├── api/             # API client + endpoint wrappers
 ├── test/            # Test utilities + setup
 └── main.tsx         # App bootstrap
