@@ -5,6 +5,78 @@ import { unitMarginPercent, formatPercent } from '../../../lib/profit';
 const PAGE_SIZE = 100;
 const MAX_PAGES_SAFETY = 50;
 
+export type ReportColumnKey =
+  'producto' | 'codigo' | 'tipo' | 'precio' | 'costo' | 'margen' | 'stock';
+
+export interface ReportColumnDef {
+  key: ReportColumnKey;
+  label: string;
+  align: 'left' | 'center' | 'right';
+  width: string;
+  render: (p: Product) => string;
+}
+
+export const REPORT_COLUMNS: Record<ReportColumnKey, ReportColumnDef> = {
+  producto: {
+    key: 'producto',
+    label: 'Producto',
+    align: 'left',
+    width: '30%',
+    render: p => escapeHtml(p.name),
+  },
+  codigo: {
+    key: 'codigo',
+    label: 'Código',
+    align: 'left',
+    width: '14%',
+    render: p => `<span style="font-family:monospace;">${escapeHtml(p.code ?? '—')}</span>`,
+  },
+  tipo: {
+    key: 'tipo',
+    label: 'Tipo',
+    align: 'center',
+    width: '12%',
+    render: p => typeBadge(p),
+  },
+  precio: {
+    key: 'precio',
+    label: 'Precio',
+    align: 'right',
+    width: '14%',
+    render: p => money(p.price),
+  },
+  costo: {
+    key: 'costo',
+    label: 'Costo',
+    align: 'right',
+    width: '12%',
+    render: p => (p.cost ? money(p.cost) : '—'),
+  },
+  margen: {
+    key: 'margen',
+    label: 'Margen',
+    align: 'right',
+    width: '10%',
+    render: p => marginDisplay(p),
+  },
+  stock: {
+    key: 'stock',
+    label: 'Stock',
+    align: 'right',
+    width: '14%',
+    render: p => stockDisplay(p),
+  },
+};
+
+/** Default: columnas de control de stock (sin costo/margen). */
+export const DEFAULT_REPORT_COLUMNS: ReportColumnKey[] = [
+  'producto',
+  'codigo',
+  'tipo',
+  'precio',
+  'stock',
+];
+
 export interface ProductsReportFilters {
   search: string;
   typeFilter: 'all' | 'product' | 'service';
@@ -16,6 +88,7 @@ export interface ProductsReportOptions {
   products: Product[];
   businessName: string;
   filters: ProductsReportFilters;
+  columns?: ReportColumnKey[];
   generatedAt?: Date;
 }
 
@@ -60,6 +133,12 @@ export function marginDisplay(p: Product): string {
   return '—';
 }
 
+function typeBadge(p: Product): string {
+  return p.type === 'service'
+    ? '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#fee2e2;color:#991b1b;">SERVICIO</span>'
+    : '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#dbeafe;color:#1e40af;">PRODUCTO</span>';
+}
+
 function escapeHtml(text: string): string {
   return text
     .replace(/&/g, '&amp;')
@@ -79,27 +158,26 @@ function filtersSummary(filters: ProductsReportFilters): string {
   return parts.join(' · ');
 }
 
-function rowHtml(p: Product): string {
-  const typeBadge =
-    p.type === 'service'
-      ? '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#fee2e2;color:#991b1b;">SERVICIO</span>'
-      : '<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#dbeafe;color:#1e40af;">PRODUCTO</span>';
-  return `
-    <tr style="border-bottom:1px solid #e5e7eb;">
-      <td style="padding:6px 8px;font-size:11px;">${escapeHtml(p.name)}</td>
-      <td style="padding:6px 8px;font-size:11px;font-family:monospace;">${escapeHtml(p.code ?? '—')}</td>
-      <td style="padding:6px 8px;text-align:center;">${typeBadge}</td>
-      <td style="padding:6px 8px;text-align:right;font-size:11px;">${money(p.price)}</td>
-      <td style="padding:6px 8px;text-align:right;font-size:11px;">${p.cost ? money(p.cost) : '—'}</td>
-      <td style="padding:6px 8px;text-align:right;font-size:11px;">${marginDisplay(p)}</td>
-      <td style="padding:6px 8px;text-align:right;font-size:11px;">${stockDisplay(p)}</td>
-    </tr>`;
+function headerHtml(columns: ReportColumnDef[]): string {
+  return columns
+    .map(c => `<th style="width:${c.width};text-align:${c.align};">${escapeHtml(c.label)}</th>`)
+    .join('');
+}
+
+function rowHtml(p: Product, columns: ReportColumnDef[]): string {
+  const cells = columns
+    .map(
+      c => `<td style="padding:6px 8px;font-size:11px;text-align:${c.align};">${c.render(p)}</td>`
+    )
+    .join('');
+  return `<tr style="border-bottom:1px solid #e5e7eb;">${cells}</tr>`;
 }
 
 export function generateProductsReportHtml(options: ProductsReportOptions): string {
   const { products, businessName, filters } = options;
   const generatedAt = options.generatedAt ?? new Date();
   const summary = filtersSummary(filters);
+  const columns = (options.columns ?? DEFAULT_REPORT_COLUMNS).map(k => REPORT_COLUMNS[k]);
 
   return `<!DOCTYPE html>
 <html>
@@ -132,18 +210,10 @@ export function generateProductsReportHtml(options: ProductsReportOptions): stri
   </div>
   <table>
     <thead>
-      <tr>
-        <th style="width:28%;">Producto</th>
-        <th style="width:12%;">Código</th>
-        <th style="width:11%;">Tipo</th>
-        <th style="width:12%;text-align:right;">Precio</th>
-        <th style="width:12%;text-align:right;">Costo</th>
-        <th style="width:11%;text-align:right;">Margen</th>
-        <th style="width:14%;text-align:right;">Stock</th>
-      </tr>
+      <tr>${headerHtml(columns)}</tr>
     </thead>
     <tbody>
-      ${products.map(rowHtml).join('')}
+      ${products.map(p => rowHtml(p, columns)).join('')}
     </tbody>
   </table>
 </body>

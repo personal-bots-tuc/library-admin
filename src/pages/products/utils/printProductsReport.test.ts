@@ -103,6 +103,46 @@ describe('printProductsReport', () => {
       expect(html).not.toContain('<script>alert("x")</script>');
       expect(html).toContain('&lt;script&gt;');
     });
+
+    it('por defecto NO incluye costo ni margen', () => {
+      const html = generateProductsReportHtml({
+        products: [baseProduct],
+        businessName: 'Negocio',
+        filters: noFilters,
+      });
+      expect(html).not.toContain('>Costo<');
+      expect(html).not.toContain('>Margen<');
+      expect(html).toContain('>Stock<');
+      expect(html).toContain('>Precio<');
+    });
+
+    it('incluye costo/margen SOLO cuando se piden explícitamente', () => {
+      const html = generateProductsReportHtml({
+        products: [baseProduct],
+        businessName: 'Negocio',
+        filters: noFilters,
+        columns: ['producto', 'costo', 'margen'],
+      });
+      expect(html).toContain('>Costo<');
+      expect(html).toContain('>Margen<');
+      expect(html).not.toContain('>Stock<');
+      expect(html).toContain('40.0%'); // margen de baseProduct
+    });
+
+    it('respeta el orden de columnas pedido', () => {
+      const html = generateProductsReportHtml({
+        products: [baseProduct],
+        businessName: 'Negocio',
+        filters: noFilters,
+        columns: ['stock', 'precio', 'producto'],
+      });
+      const idxStock = html.indexOf('>Stock<');
+      const idxPrecio = html.indexOf('>Precio<');
+      const idxProducto = html.indexOf('>Producto<');
+      expect(idxStock).toBeGreaterThan(-1);
+      expect(idxStock).toBeLessThan(idxPrecio);
+      expect(idxPrecio).toBeLessThan(idxProducto);
+    });
   });
 
   describe('fetchAllProducts', () => {

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Products: botón "Imprimir listado"** — Genera reporte A4 portrait (tabla Producto/Código/Tipo/Precio/Costo/Margen/Stock) tomando TODOS los ítems de los filtros activos (búsqueda, tipo, solo stock bajo, orden). `src/pages/products/utils/printProductsReport.ts` + botón en toolbar del listado. Nombre del negocio en header via `useSchool().schoolName`.
+- **Products: botón "Imprimir listado" con columnas dinámicas** — Modal selector de columnas (default: Producto/Código/Tipo/Precio/Stock; opcionales: Costo, Margen) y reporte A4 portrait con TODOS los ítems de los filtros activos (búsqueda, tipo, solo stock bajo, orden). `src/pages/products/utils/printProductsReport.ts` + `components/PrintReportModal/` + botón en toolbar del listado. Nombre del negocio en header via `useSchool().schoolName`.
 - **Settings: `labelBusinessName`** — Campo nuevo en Configuración → General para personalizar el nombre mostrado en etiquetas/impresiones. Fallback chain centralizado en `useSchool`: `school.name → settings.labelBusinessName → 'Mi Negocio'`. Tests de la cadena completa (`src/hooks/useSchool.test.tsx`).
 - **Products: Preciero/PriceLabels tab** — Nueva pestaña en `/products/preciero` para impresión de etiquetas de precios en hojas A4 con presets 10/20/30 etiquetas por hoja, vista previa live y selección con cantidad configurable por producto. [ADMIN-105]
 - **Hooks: useProducts / useAllProducts** — Hooks reutilizables para listado paginado (server-side) y catálogo completo (client-side, loop limit=100). Tests ≥80% coverage.

@@ -20,11 +20,10 @@ src/
 │   ├── dashboard/   # Dashboard + widgets
 │   ├── products/    # Products CRUD + Preciero + impresión de listado
 │   │   ├── ProductsLayout.tsx      # Tabs "Listado" | "Preciero" + <Outlet>
-│   │   ├── ProductsListPage.tsx    # Listado paginado (useProducts) + botón imprimir
-│   │   ├── ProductsPage.tsx        # LEGACY: mantener por ahora (marker de conflicto)
-│   │   ├── hooks/useProductsList.ts   # Listado paginado server-side + sumarios refactorizado
-│   │   ├── components/Pagination/  # Paginación con ellipsis
-│   │   ├── utils/printProductsReport.ts # Reporte A4 portrait (fetch all + HTML print)
+│   │   ├── ProductsListPage.tsx    # Listado paginado (useProducts) + botón imprimir (modal columnas)
+│   │   ├── components/
+│   │   │   └── PrintReportModal/       # Selector de columnas (default sin costo/margen)
+│   │   ├── utils/printProductsReport.ts # Reporte A4 portrait (fetch all + registry de columnas + HTML print)
 │   │   └── PriceLabelsPage/        # Preciero: etiquetas A4 10/20/30
 │   │       ├── PriceLabelsPage.tsx
 │   │       ├── components/         # PriceLabelsTable, PresetSelector, LabelPreview, etc.
