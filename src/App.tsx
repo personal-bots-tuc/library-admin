@@ -4,13 +4,15 @@ import { useAuth } from "./hooks/useAuth";
 import LoginPage from "./pages/LoginPage";
 import Layout from "./layout/Layout";
 import DashboardPage from "./pages/dashboard";
-import ProductsPage from "./pages/products/ProductsPage";
+import ProductsLayout from "./pages/products/ProductsLayout";
+import ProductsListPage from "./pages/products/ProductsListPage";
 import SalesPage from "./pages/sales/SalesPage";
 import ClientesPage from "./pages/clients/ClientsPage";
 import CreditosPage from "./pages/credits/CreditsPage";
 import ArqueoPage from "./pages/cash-register/CashRegisterPage";
 import UsuariosPage from "./pages/users/UsersPage";
 import ConfigPage from "./pages/settings/ConfigPage";
+import PriceLabelsPage from "./pages/products/PriceLabelsPage/PriceLabelsPage";
 import BotPage from "./pages/bot/BotPage";
 import BotConfigTab from "./pages/bot/BotConfigTab";
 import MessagesPage from "./pages/bot/MessagesPage";
@@ -27,7 +29,10 @@ type RouteDef = { path: string; element: ReactNode; children?: RouteDef[] };
 const protectedRoutes: RouteDef[] = [
   { path: "/", element: <Navigate to="/dashboard" replace /> },
   { path: "/dashboard", element: <DashboardPage /> },
-  { path: "/products", element: <ProductsPage /> },
+  { path: "/products", element: <ProductsLayout />, children: [
+    { path: "", element: <ProductsListPage /> },
+    { path: "preciero", element: <PriceLabelsPage /> },
+  ] },
   { path: "/sales", element: <SalesPage /> },
   { path: "/clients", element: <ClientesPage /> },
   { path: "/credits", element: <CreditosPage /> },
