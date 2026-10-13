@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- **Sales: la columna "Fecha / Hora" muestra fecha y hora** — La tabla del historial de ventas mostraba solo la hora aunque el backend ya devuelve el timestamp completo (`createdAt` ISO 8601). La celda ahora apila fecha (dd/mm/yyyy) sobre hora (HH:mm). En el mismo PR: los montos de la tabla y los KPIs pasan a formatearse en pesos argentinos con el helper compartido `money` de `lib/format` (antes `toLocaleString("en-US", USD)` — inconsistente con los modales de la misma pantalla), corrección de `colSpan`/celdas del skeleton (9 → 8, igualando al header), fixtures de tests alineados al contrato real (`SaleListResult.items`, `SalesSummary`) y refactor de `SalesPage` extrayendo `hooks/useSalesPage` + componentes `SaleTableRow`/`SalesFilters`/`SalesTable`/`SalesSummaryKPIs`, eliminando los 7 errores de lint preexistentes del archivo que bloqueaban commit/CI. [ADMIN-110]
+
+### Fixed
 - **Login con bucle de recarga infinito (`GET /settings` → 401)** — `SchoolProvider` fetcheaba `/settings` (endpoint protegido con `authMiddleware + requireAdmin`) sin sesión desde el bootstrap, incluyendo la pantalla `/login`; el interceptor de axios respondía al 401 con `window.location.href = '/login'` (recarga dura incluso estando en `/login`), generando un loop que impedía iniciar sesión. Fixes: (1) `useSchool` solo fetchea settings cuando hay sesión (`isAuthenticated` de `useAuth`) y limpia el estado al cerrar sesión; (2) el interceptor 401 no limpia storage ni redirige cuando ya se está en `/login`. [ADMIN-109]
 
 ### Added

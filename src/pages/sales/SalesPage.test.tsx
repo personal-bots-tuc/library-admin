@@ -1,63 +1,90 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderWithAdminProviders } from '../../test/utils';
+import { renderWithAdminProviders, screen, within } from '../../test/utils';
 import SalesPage from './SalesPage';
 
 // Mock the sales API
 vi.mock('../../api/sales', () => ({
   listSales: vi.fn().mockResolvedValue({
-    data: [
+    items: [
       {
         id: '1',
-        client: { fullName: 'Cliente 1' },
-        total: 5000,
-        type: 'sale',
-        paymentMethod: 'cash',
-        createdAt: '2024-01-15T10:00:00Z',
-        voided: false,
-        items: [],
         number: 1,
+        type: 'sale',
+        voided: false,
+        paymentMethod: 'cash',
+        subtotal: 5000,
+        discount: 0,
+        total: 5000,
+        amountReceived: 5000,
+        change: 0,
+        client: { id: 'c1', fullName: 'Cliente 1', balance: 0 },
+        seller: { id: 'u1', name: 'Vendedor 1', role: 'seller' },
+        items: [],
+        createdAt: '2024-01-15T10:00:00Z',
       },
       {
         id: '2',
-        client: { fullName: 'Cliente 2' },
-        total: 3000,
-        type: 'return',
-        paymentMethod: 'credit',
-        createdAt: '2024-01-15T11:00:00Z',
-        voided: false,
-        items: [],
         number: 2,
+        type: 'return',
+        voided: false,
+        paymentMethod: 'credit',
+        subtotal: 3000,
+        discount: 0,
+        total: 3000,
+        amountReceived: 0,
+        change: 0,
+        client: { id: 'c2', fullName: 'Cliente 2', balance: 0 },
+        seller: { id: 'u1', name: 'Vendedor 1', role: 'seller' },
+        items: [],
+        createdAt: '2024-01-16T11:00:00Z',
       },
     ],
     total: 2,
     page: 1,
     limit: 10,
+    totalPages: 1,
   }),
   getSale: vi.fn().mockResolvedValue({
     id: '1',
-    client: { fullName: 'Cliente 1' },
-    items: [{ productName: 'Libro 1', quantity: 2, price: 2500 }],
-    total: 5000,
-    type: 'sale',
-    paymentMethod: 'cash',
-    createdAt: '2024-01-15T10:00:00Z',
-    voided: false,
     number: 1,
+    type: 'sale',
+    voided: false,
+    paymentMethod: 'cash',
+    subtotal: 5000,
+    discount: 0,
+    total: 5000,
+    amountReceived: 5000,
+    change: 0,
+    client: { id: 'c1', fullName: 'Cliente 1', balance: 0 },
+    seller: { id: 'u1', name: 'Vendedor 1', role: 'seller' },
+    items: [
+      {
+        product: 'p1',
+        name: 'Libro 1',
+        type: 'product',
+        quantity: 2,
+        unitPrice: 2500,
+        subtotal: 5000,
+      },
+    ],
+    createdAt: '2024-01-15T10:00:00Z',
   }),
   getSalesSummary: vi.fn().mockResolvedValue({
-    totalSales: 2,
+    salesToday: 2,
+    salesGrowth: 0,
     totalRevenue: 8000,
-    cashRevenue: 5000,
-    creditRevenue: 3000,
+    returnsCount: 0,
+    returnsAmount: 0,
+    averageTicket: 4000,
   }),
   creditNoteSale: vi.fn().mockResolvedValue({ id: 'cn-1', saleId: '1', amount: 2500 }),
 }));
 
 describe('SalesPage', () => {
-  it('renders sales table', async () => {
-    const { container } = renderWithAdminProviders(<SalesPage />);
-    // Check that the table renders
-    await expect(container.querySelector('table')).toBeInTheDocument();
+  it('renders sales table with loaded rows', async () => {
+    renderWithAdminProviders(<SalesPage />);
+    await screen.findByText('Cliente 1');
+    expect(screen.getByRole('table')).toBeInTheDocument();
   });
 
   it('shows loading state initially', () => {
@@ -67,8 +94,35 @@ describe('SalesPage', () => {
   });
 
   it('shows sale status badges', async () => {
-    const { container } = renderWithAdminProviders(<SalesPage />);
-    // Wait for the component to render the sales data - check for any status badge text
-    await expect(container.querySelector('table')).toBeInTheDocument();
+    renderWithAdminProviders(<SalesPage />);
+    await screen.findByText('Cliente 1');
+    expect(screen.getByText('VENTA')).toBeInTheDocument();
+    expect(screen.getByText('DEVOLUCIÓN')).toBeInTheDocument();
+  });
+
+  it('renders date and time for each sale row', async () => {
+    renderWithAdminProviders(<SalesPage />);
+    // Helpers: mismas funciones/locale del componente → timezone-agnostic.
+    // Las ventas están a >24h de distancia → nunca comparten fecha local en ningún timezone.
+    const fmtDate = (d: Date) =>
+      d.toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    // ICU puede emitir NBSP (\u00a0) antes de "a. m."; Testing Library lo colapsa a espacio al normalizar el DOM
+    const fmtTime = (d: Date) =>
+      d
+        .toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const row1 = (await screen.findByText('Cliente 1')).closest('tr');
+    const row2 = (await screen.findByText('Cliente 2')).closest('tr');
+    expect(row1).not.toBeNull();
+    expect(row2).not.toBeNull();
+
+    const date1 = new Date('2024-01-15T10:00:00Z');
+    const date2 = new Date('2024-01-16T11:00:00Z');
+    expect(within(row1 as HTMLElement).getByText(fmtDate(date1))).toBeInTheDocument();
+    expect(within(row1 as HTMLElement).getByText(fmtTime(date1))).toBeInTheDocument();
+    expect(within(row2 as HTMLElement).getByText(fmtDate(date2))).toBeInTheDocument();
+    expect(within(row2 as HTMLElement).getByText(fmtTime(date2))).toBeInTheDocument();
   });
 });
