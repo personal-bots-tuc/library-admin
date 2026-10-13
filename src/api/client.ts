@@ -18,10 +18,15 @@ api.interceptors.response.use(
   response => response,
   error => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Si ya estamos en /login, el 401 vino de una request anónima: no hay
+      // sesión que limpiar y redirigir acá recarga el documento en bucle
+      // infinito (window.location.href recarga aunque la URL no cambie).
+      if (window.location.pathname !== '/login') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getSchool } from '../../api/schools';
 import { getSettings } from '../../api/settings';
+import { useAuth } from '../useAuth';
 import type { School, SchoolContextValue, SchoolProviderProps } from './types';
 
 const SchoolContext = createContext<SchoolContextValue | undefined>(undefined);
@@ -14,9 +15,10 @@ const DEFAULT_FALLBACK = 'Mi Negocio';
  * - El user logueado tiene `schoolId` en su profile
  * - Al montar, hacemos fetch del school por ID
  * - Los datos se cachean en memoria durante la sesión
- * - Fetch de settings para labelBusinessName (fallback chain)
+ * - Fetch de settings para labelBusinessName (fallback chain), solo con sesión activa
  */
 export function SchoolProvider({ children, fallbackName = DEFAULT_FALLBACK }: SchoolProviderProps) {
+  const { isAuthenticated } = useAuth();
   const [school, setSchool] = useState<School | null>(null);
   const [settings, setSettings] = useState<{ labelBusinessName?: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -36,12 +38,22 @@ export function SchoolProvider({ children, fallbackName = DEFAULT_FALLBACK }: Sc
     }
   }, []);
 
-  // Fetch settings para labelBusinessName (fallback chain)
+  // Fetch de settings para labelBusinessName (fallback chain).
+  // /settings requiere Bearer token (authMiddleware + requireAdmin): sin sesión
+  // responde 401 y el interceptor de axios fuerza redirect a /login (bucle de
+  // recarga en la propia pantalla de login). Solo se fetchea autenticado y se
+  // resetea al cerrar sesión.
   useEffect(() => {
+    if (!isAuthenticated) {
+      queueMicrotask(() => {
+        setSettings(null);
+      });
+      return;
+    }
     getSettings()
       .then(setSettings)
       .catch(() => setSettings(null));
-  }, []);
+  }, [isAuthenticated]);
 
   // Al montar: leer schoolId del usuario almacenado
   useEffect(() => {
