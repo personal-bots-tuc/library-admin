@@ -1,5 +1,5 @@
 import type { SaleRow } from '../../../api/sales';
-import { formatMoney } from '../utils/formatMoney';
+import { money } from '../../../lib/format';
 
 // Clases/cadenas dependientes del tipo como lookups (evita ternarios anidados y baja la complejidad)
 const TYPE_SUFFIX: Record<SaleRow['type'], string> = { sale: '', return: 'R', credit_note: 'NC' };
@@ -135,7 +135,7 @@ function TotalCell({
     <td className={`px-5 py-4 font-bold ${TYPE_TOTAL_TEXT[type]}`}>
       <span className={voided ? 'line-through text-neutral-400' : ''}>
         {type === 'return' ? '-' : ''}
-        {formatMoney(total)}
+        {money(total)}
       </span>
     </td>
   );

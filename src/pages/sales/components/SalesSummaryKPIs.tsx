@@ -1,5 +1,5 @@
 import type { SalesSummary } from '../../../api/sales';
-import { formatMoney } from '../utils/formatMoney';
+import { money } from '../../../lib/format';
 
 interface KPICardProps {
   title: string;
@@ -60,14 +60,14 @@ export default function SalesSummaryKPIs({ summary, loading }: SalesSummaryKPIsP
         value={summary.salesToday}
         badge={summary.salesGrowth > 0 ? `+${summary.salesGrowth}%` : undefined}
       />
-      <KPICard title="Total Facturado" value={formatMoney(summary.totalRevenue)} />
+      <KPICard title="Total Facturado" value={money(summary.totalRevenue)} />
       <KPICard
         title="Devoluciones"
         value={summary.returnsCount}
-        badge={summary.returnsAmount > 0 ? `-${formatMoney(summary.returnsAmount)}` : undefined}
+        badge={summary.returnsAmount > 0 ? `-${money(summary.returnsAmount)}` : undefined}
         badgeColor="red"
       />
-      <KPICard title="Ticket Promedio" value={formatMoney(summary.averageTicket)} />
+      <KPICard title="Ticket Promedio" value={money(summary.averageTicket)} />
     </div>
   );
 }
