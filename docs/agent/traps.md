@@ -1,11 +1,17 @@
 ---
 type: Traps
 version: <sha-corto>
-validated: 2026-10-05
+validated: 2026-10-13
 update_when: when new non-obvious behavior is confirmed
 ---
 
 # Traps - Library System Admin
+
+## Bootstrap anónimo + interceptor 401 = bucle de recarga (2026-10-13)
+**Problema**: Un provider global montado en `main.tsx` (ej. `SchoolProvider`, que envuelve también `/login`) fetcheó un endpoint protegido (`GET /settings`, `authMiddleware + requireAdmin`) sin sesión → 401 → interceptor de axios ejecutaba `window.location.href = '/login'` (recarga dura aun estando en `/login`) → remount del provider → refetch → **loop infinito que impedía loguearse**.
+**Solución**: (1) fetches de bootstrap gateados con `useAuth` (`isAuthenticated`) dentro del provider; (2) el interceptor 401 no limpia storage ni redirige si `window.location.pathname === '/login'`.
+**Regla**: ningún fetch a endpoint protegido puede dispararse en bootstrap sin sesión. Si se necesita "branding público" pre-login (ej. nombre del negocio en `/login`), requiere un endpoint público en backend que exponga solo campos no sensibles.
+**Evidencia**: ADMIN-109 — `src/hooks/useSchool/index.tsx`, `src/api/client.ts` + tests.
 
 ## Runtime Config (CRÍTICO)
 **Problema**: `VITE_*` variables se inyectan en build-time por Vite, pero Railway inyecta variables en runtime.
