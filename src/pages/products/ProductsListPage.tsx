@@ -13,6 +13,7 @@ import {
   type ReportColumnKey,
 } from './utils/printProductsReport';
 import PrintReportModal from './components/PrintReportModal';
+import { useSearchContext } from './SearchContext';
 
 type TypeFilter = 'all' | 'product' | 'service';
 type SortOption =
@@ -50,8 +51,21 @@ export default function ProductsListPage() {
     setTypeFilter,
     setLowStockOnly,
     setSort,
+    setSearch: setSearchProducts,
     refetch,
   } = useProducts();
+
+  const { search, setSearch: _setSearch } = useSearchContext();
+
+  // Sincronizar search del context (header) con useProducts (API)
+  // Usamos ref para evitar loop infinito porque setSearchProducts es nueva cada render
+  const prevSearchRef = useRef(search);
+  useEffect(() => {
+    if (prevSearchRef.current !== search) {
+      prevSearchRef.current = search;
+      setSearchProducts(search);
+    }
+  }, [search, setSearchProducts]);
 
   const [productCount, setProductCount] = useState(0);
   const [serviceCount, setServiceCount] = useState(0);
@@ -281,6 +295,15 @@ export default function ProductsListPage() {
           className="text-xs text-neutral-500 hover:text-neutral-700"
         >
           Limpiar filtros
+        </button>
+
+        <button
+          onClick={() => setCreateModalOpen(true)}
+          className="ml-auto px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 flex items-center gap-1.5"
+          aria-label="Crear nuevo producto"
+        >
+          <span className="material-icons text-sm">add</span>
+          Nuevo producto
         </button>
 
         <button
