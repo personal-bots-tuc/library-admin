@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Crash IndexedDB tras login (ADMIN-112)** — la capa offline persistía en un object
+  store por namespace (`rq-<ns>`), pero los object stores solo se crean en la PRIMERA
+  apertura de la DB: el namespace `anon` (login) creaba la DB y todo namespace posterior
+  explotaba con `NotFoundError: object store not found` en cada mutation. Ahora: un solo
+  store fijo, namespace como prefijo de key, DB renombrada a `admin-offline-cache-v2`
+  con limpieza de la legacy.
+- **Botón "Nuevo producto" restaurado** — se perdió en el refactor Preciero (12-oct,
+  commit `e496c11`) cuando `ProductsPage` se dividió en `ProductsLayout` +
+  `ProductsListPage` y el `primaryAction` no se reconectó; el modal quedó montado sin
+  trigger. Regresión preexistente, no relacionada a ADMIN-111.
+
 ### Added
 - **Optimización de costos Railway (App Sleep) + offline-first de lectura (ADMIN-111)** —
   (1) React Query + persistencia IndexedDB namespaced por `schoolId:userId` con purga en

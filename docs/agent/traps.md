@@ -106,3 +106,15 @@ update_when: when new non-obvious behavior is confirmed
 4. **Sin health-pings de conectividad** (badge pasivo). Un ping rompe App Sleep.
 5. Service Worker hand-rolled (`public/sw.js`): passthrough obligatorio de `/config.js` (inyección runtime de VITE_API_BASE_URL), `/health`, `/api/*`. Update de versión solo con confirmación del usuario.
 6. Si el 401 del interceptor fuerza logout, el cache persistido NO se purga en ese path (bootstrap redirect); se evita fuga de datos entre usuarios porque el namespace incluye `userId` — un usuario distinto nunca hidrata el store del anterior.
+
+## IndexedDB: object stores NO se crean en runtime (ADMIN-112, 2026-10-14)
+**Problema**: `idb-keyval` `createStore(db, name)` crea el store SOLO en
+`onupgradeneeded` (primera apertura de la DB con ese schema). Un store por
+namespace (`rq-anon` en login, `rq-<school>:<user>` post-login) explotaba en el
+segundo namespace con `NotFoundError: object store not found` en cada persistencia
+— y las rejection no se capturaban → errores "fantasma" en consola.
+**Regla**: IndexedDB usa UN store fijo y los namespaces van en el PREFIJO de la key
+(`admin-query:<schoolId>:<userId>`). Al cambiar la forma de la DB, NO intentar
+upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
+**Evidencia**: `src/lib/persistence.ts`, regression test multi-namespace en
+`src/lib/persistence.test.ts`.
