@@ -2,7 +2,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import PageHeader from '../../components/PageHeader';
 import { SearchProvider, useSearchContext } from './SearchContext';
 
-export default function ProductsLayout() {
+function ProductsLayoutContent() {
   const location = useLocation();
   const { search, setSearch } = useSearchContext();
   const isListView = location.pathname === '/products';
@@ -45,9 +45,15 @@ export default function ProductsLayout() {
         </NavLink>
       </nav>
 
-      <SearchProvider>
-        <Outlet />
-      </SearchProvider>
+      <Outlet />
     </div>
+  );
+}
+
+export default function ProductsLayout() {
+  return (
+    <SearchProvider>
+      <ProductsLayoutContent />
+    </SearchProvider>
   );
 }
