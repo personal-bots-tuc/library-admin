@@ -298,22 +298,22 @@ export default function ProductsListPage() {
         </button>
 
         <button
-          onClick={() => setPrintModalOpen(true)}
-          disabled={loading}
-          className="ml-auto px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-          aria-label="Imprimir listado de productos"
-        >
-          <span className="material-icons text-sm">print</span>
-          Imprimir listado
-        </button>
-
-        <button
           onClick={() => setCreateModalOpen(true)}
-          className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 flex items-center gap-1.5"
+          className="ml-auto px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 flex items-center gap-1.5"
           aria-label="Crear nuevo producto"
         >
           <span className="material-icons text-sm">add</span>
           Nuevo producto
+        </button>
+
+        <button
+          onClick={() => setPrintModalOpen(true)}
+          disabled={loading}
+          className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+          aria-label="Imprimir listado de productos"
+        >
+          <span className="material-icons text-sm">print</span>
+          Imprimir listado
         </button>
       </div>
 
