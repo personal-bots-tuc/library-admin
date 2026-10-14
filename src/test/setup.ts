@@ -1,5 +1,7 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+// IndexedDB en jsdom para la capa de persistencia offline (idb-keyval).
+import 'fake-indexeddb/auto';
 
 const localStorageMock = (() => {
   let store: Record<string, string> = {};

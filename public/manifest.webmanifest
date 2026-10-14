@@ -1,0 +1,12 @@
+{
+  "name": "Panel de Administración",
+  "short_name": "Admin",
+  "description": "Panel de administración del sistema de biblioteca",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1e40af",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

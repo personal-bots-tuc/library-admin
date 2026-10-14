@@ -1,113 +1,78 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { listProducts, type ListProductsParams, type Product, type ProductListResponse } from "../../api/products";
-import type { UseAllProductsReturn, FetchError } from "./types";
+import { useQuery } from '@tanstack/react-query';
+import {
+  listProducts,
+  type ListProductsParams,
+  type Product,
+  type ProductListResponse,
+} from '../../api/products';
+import { useSyncGate } from '../useSyncGate';
+import type { UseAllProductsReturn, FetchError } from './types';
 
 const MAX_LIMIT = 100;
+/** Catálogo completo: sync cada 10 min con compuertas abiertas (parámetro aprobado). */
+export const ALL_PRODUCTS_SYNC_INTERVAL_MS = 10 * 60 * 1000;
+
+export const ALL_PRODUCTS_QUERY_KEY = ['products', 'all'] as const;
 
 function isFetchError(err: unknown): err is FetchError {
-  return typeof err === "object" && err !== null;
-}
-
-function isAbortError(err: unknown): boolean {
-  return isFetchError(err) && err.name === "AbortError";
+  return typeof err === 'object' && err !== null;
 }
 
 function getErrorMessage(err: unknown): string {
   if (isFetchError(err)) {
-    return err.response?.data?.message || err.message || "Error cargando catálogo completo";
+    return err.response?.data?.message || err.message || 'Error cargando catálogo completo';
   }
-  return "Error cargando catálogo completo";
+  return 'Error cargando catálogo completo';
 }
 
-export function useAllProducts(): UseAllProductsReturn {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+async function fetchAllProducts(): Promise<Product[]> {
+  let page = 1;
+  let totalPages: number;
+  const allProducts: Product[] = [];
 
-  const cancelledRef = useRef(false);
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const isInitialMountRef = useRef(true);
-
-  const fetchPage = useCallback(
-    async (page: number): Promise<{ items: Product[]; totalPages: number }> => {
-      const params: ListProductsParams = {
-        active: true,
-        page,
-        limit: MAX_LIMIT,
-        sortBy: "name",
-        sortOrder: "asc",
-      };
-      const data: ProductListResponse = await listProducts(params);
-      return { items: data.items, totalPages: data.totalPages };
-    },
-    []
-  );
-
-  const fetchAll = useCallback(async () => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
-    abortControllerRef.current = new AbortController();
-
-    cancelledRef.current = false;
-    setLoading(true);
-    setError(null);
-    setProducts([]);
-
-    try {
-      let page = 1;
-      let totalPages = 1;
-      const allProducts: Product[] = [];
-
-      do {
-        if (cancelledRef.current) break;
-
-        const { items, totalPages: pages } = await fetchPage(page);
-
-        if (cancelledRef.current) break;
-
-        allProducts.push(...items);
-        totalPages = pages;
-        page++;
-      } while (page <= totalPages);
-
-      if (!cancelledRef.current) {
-        setProducts(allProducts);
-      }
-    } catch (err: unknown) {
-      if (!cancelledRef.current && !isAbortError(err)) {
-        setError(getErrorMessage(err));
-        setProducts([]);
-      }
-    } finally {
-      if (!cancelledRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [fetchPage]);
-
-  useEffect(() => {
-    if (isInitialMountRef.current) {
-      isInitialMountRef.current = false;
-      fetchAll();
-    }
-
-    return () => {
-      cancelledRef.current = true;
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+  do {
+    const params: ListProductsParams = {
+      active: true,
+      page,
+      limit: MAX_LIMIT,
+      sortBy: 'name',
+      sortOrder: 'asc',
     };
-  }, [fetchAll]);
+    const data: ProductListResponse = await listProducts(params);
+    allProducts.push(...data.items);
+    totalPages = data.totalPages;
+    page++;
+  } while (page <= totalPages);
 
-  const refetch = useCallback(async () => {
-    await fetchAll();
-  }, [fetchAll]);
+  return allProducts;
+}
+
+/**
+ * Catálogo completo — query PERSISTIDA en IndexedDB (arranque instantáneo
+ * aunque el backend esté dormido). La cancelación por desmontaje/cambio de
+ * contexto la maneja React Query (AbortSignal): se eliminó el manejo manual
+ * con refs que existía antes.
+ */
+export function useAllProducts(): UseAllProductsReturn {
+  const syncAllowed = useSyncGate();
+
+  const query = useQuery({
+    queryKey: ALL_PRODUCTS_QUERY_KEY,
+    queryFn: ({ signal }) => {
+      void signal; // listProducts no acepta AbortSignal hoy; RQ igual deduplica y cancela observers
+      return fetchAllProducts();
+    },
+    staleTime: 5 * 60_000,
+    refetchInterval: syncAllowed ? ALL_PRODUCTS_SYNC_INTERVAL_MS : false,
+    // refetchIntervalInBackground: false (default del client) — jamás en tab oculta.
+  });
 
   return {
-    products,
-    loading,
-    error,
-    refetch,
+    products: query.data ?? [],
+    loading: query.isPending,
+    error: query.error ? getErrorMessage(query.error) : null,
+    refetch: async () => {
+      await query.refetch();
+    },
   };
 }
