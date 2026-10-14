@@ -13,6 +13,7 @@ import {
   type ReportColumnKey,
 } from './utils/printProductsReport';
 import PrintReportModal from './components/PrintReportModal';
+import { useSearchContext } from './SearchContext';
 
 type TypeFilter = 'all' | 'product' | 'service';
 type SortOption =
@@ -50,8 +51,21 @@ export default function ProductsListPage() {
     setTypeFilter,
     setLowStockOnly,
     setSort,
+    setSearch: setSearchProducts,
     refetch,
   } = useProducts();
+
+  const { search, setSearch: _setSearch } = useSearchContext();
+
+  // Sincronizar search del context (header) con useProducts (API)
+  // Usamos ref para evitar loop infinito porque setSearchProducts es nueva cada render
+  const prevSearchRef = useRef(search);
+  useEffect(() => {
+    if (prevSearchRef.current !== search) {
+      prevSearchRef.current = search;
+      setSearchProducts(search);
+    }
+  }, [search, setSearchProducts]);
 
   const [productCount, setProductCount] = useState(0);
   const [serviceCount, setServiceCount] = useState(0);
