@@ -97,3 +97,12 @@ update_when: when new non-obvious behavior is confirmed
 **Problema**: `useAllProducts` hace loop `limit=100` hasta `totalPages` para traer catálogo completo. Si catálogo >10k productos, la carga inicial puede tardar >5s y consumir memoria.
 **Solución**: Para catálogos grandes, evaluar endpoint bulk en backend (`GET /products/bulk?ids=...` o export) y migrar hook. Mientras tanto, hook cachea en memoria durante la sesión.
 **Evidencia**: `src/hooks/useAllProducts/index.tsx` + `src/pages/products/PriceLabelsPage/PriceLabelsPage.tsx`.
+## Polling, cache local y costos Railway (ADMIN-111, 2026-10-13)
+**Problema**: `MessagesPage` corría 2×`setInterval` de 8s sin importar visibilidad (~900 req/hora/tab en background), bloqueando App Sleep.
+**Reglas vigentes** (mismas que POS — mantener alineadas):
+1. **PROHIBIDO `setInterval` para refetch fuera de `src/hooks/useSyncGate.ts`** — CI falla (`npm run guardrails`).
+2. Queries de lectura estable se persisten en IndexedDB namespaced `schoolId:userId` (whitelist `shouldPersistQuery`: `products`, `school`). Volátiles (conversaciones del bot, ventas, caja) NUNCA se persisten.
+3. La bandeja del bot usa backoff 8s→60s cuando la firma de la lista no cambia + compuertas; pause/resume/reply invalidan queries (push-like inmediato) en vez de esperar el próximo tick — ojo: NO confundir `refetchInterval` con polling manual.
+4. **Sin health-pings de conectividad** (badge pasivo). Un ping rompe App Sleep.
+5. Service Worker hand-rolled (`public/sw.js`): passthrough obligatorio de `/config.js` (inyección runtime de VITE_API_BASE_URL), `/health`, `/api/*`. Update de versión solo con confirmación del usuario.
+6. Si el 401 del interceptor fuerza logout, el cache persistido NO se purga en ese path (bootstrap redirect); se evita fuga de datos entre usuarios porque el namespace incluye `userId` — un usuario distinto nunca hidrata el store del anterior.
