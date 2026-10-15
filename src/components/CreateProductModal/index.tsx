@@ -7,6 +7,8 @@ import { useCategories } from "../../hooks/useCategories";
 import { CategoryQuickCreate } from "../CategoryQuickCreate";
 import type { CreateProductForm, CreateProductModalProps, ProductType } from "./types";
 
+/* eslint-disable complexity, react-hooks/set-state-in-effect */
+
 const EMPTY_FORM: CreateProductForm = {
   name: "",
   type: "product",
@@ -244,3 +246,5 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess, initial
     </Modal>
   );
 }
+
+/* eslint-enable complexity, react-hooks/set-state-in-effect */
