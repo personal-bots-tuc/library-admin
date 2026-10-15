@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderWithAdminProviders } from '../../test/utils';
 import { CategoryQuickCreate } from './index';
-import { createCategory } from '../../api/categories';
 
 vi.mock('../../api/categories', () => ({
   createCategory: vi.fn(),
