@@ -23,6 +23,19 @@ const TYPE_OPTIONS: { label: string; value: ProductType }[] = [
   { label: "Servicio", value: "service" },
 ];
 
+function ProfitInfo({ price, cost }: { price: number; cost?: number }) {
+  if (cost === undefined) return null;
+  const profit = unitGrossProfit(price, cost ?? 0);
+  const margin = formatPercent(unitMarginPercent(price, cost ?? 0));
+  return (
+    <div className="mt-2">
+      <p className="text-sm text-neutral-600">Ganancia estimada: <span className="font-semibold">{profit.toLocaleString("es-AR")}</span></p>
+      <p className="text-sm text-neutral-600">Margen estimado: <span className="font-semibold">{margin}</span></p>
+      {price <= (cost ?? 0) && <p className="text-amber-600 font-medium">El precio no cubre el costo de compra.</p>}
+    </div>
+  );
+}
+
 function mapToForm(data?: CreateProductModalProps["initialData"]): CreateProductForm {
   if (!data) return EMPTY_FORM;
   return {
@@ -38,13 +51,13 @@ function mapToForm(data?: CreateProductModalProps["initialData"]): CreateProduct
 }
 
 export default function CreateProductModal({ isOpen, onClose, onSuccess, initialData }: CreateProductModalProps) {
-  if (!isOpen) return null;
-
   const [form, setForm] = useState<CreateProductForm>(() => mapToForm(initialData));
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const { categories, loading: categoriesLoading } = useCategories();
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+
+  if (!isOpen) return null;
 
   const handleChange = (field: keyof CreateProductForm, value: string | number | undefined) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -69,18 +82,7 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess, initial
     }
   };
 
-  const profitBlock =
-    form.cost !== undefined ? (
-      <div className="mt-2">
-        <p className="text-sm text-neutral-600">
-          Ganancia estimada: <span className="font-semibold">{unitGrossProfit(form.price, form.cost ?? 0).toLocaleString("es-AR")}</span>
-        </p>
-        <p className="text-sm text-neutral-600">
-          Margen estimado: <span className="font-semibold">{formatPercent(unitMarginPercent(form.price, form.cost ?? 0))}</span>
-        </p>
-        {form.price <= form.cost && <p className="text-amber-600 font-medium">El precio no cubre el costo de compra.</p>}
-      </div>
-    ) : null;
+  const profitBlock = <ProfitInfo price={form.price} cost={form.cost} />;
 
   return (
     <Modal title={initialData ? "Editar producto" : "Crear producto"} isOpen={isOpen} onClose={onClose}>
