@@ -4,6 +4,7 @@ import Modal from "../Modal";
 import { unitGrossProfit, unitMarginPercent, formatPercent } from "../../lib/profit";
 import { createProduct, updateProduct } from "../../api/products";
 import { useCategories } from "../../hooks/useCategories";
+import { CategoryQuickCreate } from "../CategoryQuickCreate";
 import type { CreateProductForm, CreateProductModalProps, ProductType } from "./types";
 
 const EMPTY_FORM: CreateProductForm = {
@@ -26,6 +27,7 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess, initial
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const { categories, loading: categoriesLoading } = useCategories();
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false);
 
   // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
@@ -104,19 +106,38 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess, initial
 
         <div>
           <label className="text-sm font-medium text-neutral-700 block mb-1">Categoría</label>
-          <select
-            value={form.categoryId ?? ""}
-            onChange={(e) => handleChange("categoryId", e.target.value || null)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
-            disabled={categoriesLoading}
-          >
-            <option value="">Sin categoría</option>
-            {categories.map(cat => (
-              <option key={cat.id} value={cat.id}>{cat.name}</option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={form.categoryId ?? ""}
+              onChange={(e) => handleChange("categoryId", e.target.value || null)}
+              className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+              disabled={categoriesLoading}
+            >
+              <option value="">Sin categoría</option>
+              {categories.map(cat => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => setQuickCreateOpen(true)}
+              className="px-3 py-2 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-sm font-medium"
+              title="Nueva categoría"
+            >
+              +
+            </button>
+          </div>
           <p className="text-xs text-neutral-500 mt-1">Categoría opcional</p>
         </div>
+
+        <CategoryQuickCreate
+          isOpen={quickCreateOpen}
+          onClose={() => setQuickCreateOpen(false)}
+          onCreated={(id) => {
+            setForm(f => ({ ...f, categoryId: id }));
+            setQuickCreateOpen(false);
+          }}
+        />
 
         <div>
           <label className="text-sm font-medium text-neutral-700 block mb-1">Tipo <span className="text-danger-500">*</span></label>

@@ -12,3 +12,8 @@ export const listCategories = async (): Promise<Category[]> => {
   const { data } = await api.get<Category[]>('/categories');
   return data;
 };
+
+export const createCategory = async (payload: { name: string; description?: string; order?: number }) => {
+  const { data } = await api.post<Category>('/categories', payload);
+  return data;
+};
