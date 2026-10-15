@@ -11,5 +11,6 @@ export function useCategories() {
     categories: query.data ?? [],
     loading: query.isPending,
     error: query.error ? String(query.error) : null,
+    refetch: query.refetch,
   };
 }

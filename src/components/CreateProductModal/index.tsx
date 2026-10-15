@@ -141,7 +141,7 @@ export default function CreateProductModal({
           <div className="flex gap-2">
             <select
               value={form.categoryId ?? ''}
-              onChange={e => handleChange('categoryId', e.target.value || null)}
+              onChange={e => handleChange('categoryId', e.target.value || undefined)}
               className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
               disabled={categoriesLoading}
             >
