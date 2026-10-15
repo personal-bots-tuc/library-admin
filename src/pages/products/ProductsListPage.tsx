@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Modal from '../../components/Modal';
 import CreateProductModal from '../../components/CreateProductModal';
+import CategoriesManagerModal from '../../components/CategoriesManagerModal';
 import { money } from '../../lib/format';
 import { unitMarginPercent, formatPercent } from '../../lib/profit';
 import { getProductCounts, deleteProduct, type Product } from '../../api/products';
@@ -81,6 +82,7 @@ export default function ProductsListPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
   const isInitialMountRef = useRef(true);
   const { schoolName } = useSchool();
 
@@ -236,6 +238,8 @@ export default function ProductsListPage() {
         )}
       </Modal>
 
+      <CategoriesManagerModal isOpen={categoriesModalOpen} onClose={() => setCategoriesModalOpen(false)} />
+
       <div className="grid grid-cols-3 gap-4">
         <SummaryCard
           icon="inventory_2"
@@ -315,6 +319,15 @@ export default function ProductsListPage() {
           className="text-xs text-neutral-500 hover:text-neutral-700"
         >
           Limpiar filtros
+        </button>
+
+        <button
+          onClick={() => setCategoriesModalOpen(true)}
+          className="px-3 py-1.5 text-xs font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 flex items-center gap-1.5"
+          aria-label="Gestionar categorías"
+        >
+          <span className="material-icons text-sm">category</span>
+          Categorías
         </button>
 
         <button

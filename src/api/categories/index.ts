@@ -17,3 +17,7 @@ export const createCategory = async (payload: { name: string; description?: stri
   const { data } = await api.post<Category>('/categories', payload);
   return data;
 };
+
+export const deleteCategory = async (id: string) => {
+  await api.delete(`/categories/${id}`);
+};
