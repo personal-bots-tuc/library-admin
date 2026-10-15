@@ -50,6 +50,7 @@ export default function ProductsListPage() {
     setLimit,
     setTypeFilter,
     setLowStockOnly,
+    setCategoryId,
     setSort,
     setSearch: setSearchProducts,
     refetch,
@@ -72,6 +73,7 @@ export default function ProductsListPage() {
   const [lowStockCount, setLowStockCount] = useState(0);
   const [typeFilter, setTypeFilterState] = useState<TypeFilter>('all');
   const [lowStockOnly, setLowStockOnlyState] = useState(false);
+  const [categoryId, setCategoryIdState] = useState<string | null>(null);
   const [sort, setSortState] = useState<SortOption>('name-asc');
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -119,6 +121,14 @@ export default function ProductsListPage() {
       setLowStockOnly(value);
     },
     [setLowStockOnly]
+  );
+
+  const handleCategoryChange = useCallback(
+    (value: string | null) => {
+      setCategoryIdState(value);
+      setCategoryId(value);
+    },
+    [setCategoryId]
   );
 
   const handleSortChange = useCallback(
@@ -274,6 +284,15 @@ export default function ProductsListPage() {
         </select>
 
         <select
+          value={categoryId ?? ''}
+          onChange={e => handleCategoryChange(e.target.value || null)}
+          className="px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-700 focus:border-primary-500 focus:outline-none"
+        >
+          <option value="">Todas las categorías</option>
+          {/* Opciones de categorías se cargarán desde API */}
+        </select>
+
+        <select
           value={sort}
           onChange={e => handleSortChange(e.target.value as SortOption)}
           className="px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-700 focus:border-primary-500 focus:outline-none"
@@ -289,6 +308,7 @@ export default function ProductsListPage() {
           onClick={() => {
             handleLowStockChange(false);
             handleTypeFilterChange('all');
+            handleCategoryChange(null);
             handleSortChange('name-asc');
             handlePageChange(1);
           }}
