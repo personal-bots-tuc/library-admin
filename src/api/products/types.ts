@@ -10,6 +10,8 @@ export interface Product {
   unit?: "unit" | "sheet" | "binding";
   code?: string;
   active: boolean;
+  categoryId?: string | null;
+  category?: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -29,6 +31,7 @@ export interface ListProductsParams {
   active?: boolean;
   type?: "product" | "service";
   lowStock?: boolean;
+  categoryId?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }

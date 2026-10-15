@@ -10,6 +10,7 @@ const initialFilterState: FilterState = {
   search: '',
   typeFilter: 'all',
   lowStockOnly: false,
+  categoryId: null,
   sortBy: 'name',
   sortOrder: 'asc',
 };
@@ -26,6 +27,7 @@ function buildApiParams(filter: FilterState, page: number, limit: number): ListP
   if (filter.search.trim()) params.search = filter.search.trim();
   if (filter.typeFilter !== 'all') params.type = filter.typeFilter;
   if (filter.lowStockOnly) params.lowStock = true;
+  if (filter.categoryId) params.categoryId = filter.categoryId;
 
   return params;
 }
@@ -80,6 +82,7 @@ function useProductsState(initialParams: UseProductsOptions['initialParams']) {
     setSearch: (search: string) => patchFilter({ search }),
     setTypeFilter: (typeFilter: TypeFilter) => patchFilter({ typeFilter }),
     setLowStockOnly: (lowStockOnly: boolean) => patchFilter({ lowStockOnly }),
+    setCategoryId: (categoryId: string | null) => patchFilter({ categoryId }),
     setSort: (sortBy: string, sortOrder: 'asc' | 'desc') => patchFilter({ sortBy, sortOrder }),
   };
 }
@@ -134,6 +137,7 @@ export function useProducts(options: UseProductsOptions = {}): UseProductsReturn
     setSearch: state.setSearch,
     setTypeFilter: state.setTypeFilter,
     setLowStockOnly: state.setLowStockOnly,
+    setCategoryId: state.setCategoryId,
     setSort: state.setSort,
     refetch: async () => {
       await query.refetch();

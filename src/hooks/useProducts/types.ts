@@ -21,6 +21,7 @@ export interface UseProductsActions {
   setSearch: (_search: string) => void;
   setTypeFilter: (_type: TypeFilter) => void;
   setLowStockOnly: (_lowStock: boolean) => void;
+  setCategoryId: (_categoryId: string | null) => void;
   setSort: (_sortBy: string, _sortOrder: "asc" | "desc") => void;
   refetch: () => Promise<void>;
 }
@@ -50,6 +51,7 @@ export interface FilterState {
   search: string;
   typeFilter: TypeFilter;
   lowStockOnly: boolean;
+  categoryId?: string | null;
   sortBy: string;
   sortOrder: "asc" | "desc";
 }

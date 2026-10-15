@@ -3,6 +3,7 @@ import { useToast } from "../Toast/useToast";
 import Modal from "../Modal";
 import { unitGrossProfit, unitMarginPercent, formatPercent } from "../../lib/profit";
 import { createProduct, updateProduct } from "../../api/products";
+import { useCategories } from "../../hooks/useCategories";
 import type { CreateProductForm, CreateProductModalProps, ProductType } from "./types";
 
 const EMPTY_FORM: CreateProductForm = {
@@ -13,6 +14,7 @@ const EMPTY_FORM: CreateProductForm = {
   stock: 0,
   minStock: undefined,
   code: "",
+  categoryId: null,
 };
 
 export default function CreateProductModal({ isOpen, onClose, onSuccess, initialData }: CreateProductModalProps) {
@@ -23,6 +25,7 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess, initial
   ]);
   const { success, error: showError } = useToast();
   const [submitting, setSubmitting] = useState(false);
+  const { categories, loading: categoriesLoading } = useCategories();
 
   // Reset form when modal opens/closes or initialData changes
   useEffect(() => {
@@ -36,6 +39,7 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess, initial
           stock: initialData.stock,
           minStock: initialData.minStock,
           code: initialData.code ?? "",
+          categoryId: initialData.categoryId ?? null,
         });
       } else {
         setForm(EMPTY_FORM);
@@ -96,6 +100,22 @@ export default function CreateProductModal({ isOpen, onClose, onSuccess, initial
           <p className="text-xs text-neutral-500 mt-1">
             Se auto-genera si queda vacío (formato: PRD-XXXXX / SRV-XXXXX)
           </p>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-neutral-700 block mb-1">Categoría</label>
+          <select
+            value={form.categoryId ?? ""}
+            onChange={(e) => handleChange("categoryId", e.target.value || null)}
+            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+            disabled={categoriesLoading}
+          >
+            <option value="">Sin categoría</option>
+            {categories.map(cat => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+          <p className="text-xs text-neutral-500 mt-1">Categoría opcional</p>
         </div>
 
         <div>

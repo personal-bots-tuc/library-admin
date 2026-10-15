@@ -29,11 +29,12 @@ scope:
 - Headers: `x-school-id` (desde JWT)
 
 ### Products
-- `GET /products` → `Product[]` (filtros: search, category, page, limit)
+- `GET /products` → `Product[]` (filtros: search, categoryId, type, lowStock, page, limit, sortBy, sortOrder)
 - `GET /products/:id` → `Product`
-- `POST /products` → `Product`
-- `PUT /products/:id` → `Product`
+- `POST /products` → `Product` (body incluye `categoryId?`)
+- `PUT /products/:id` → `Product` (body parcial incluye `categoryId?`)
 - `DELETE /products/:id` → void
+- `Product` shape: `{ id, name, description?, type, price, cost?, stock, minStock?, unit?, code?, active, categoryId?, createdAt, updatedAt }`
 
 ### Clients
 - `GET /clients` → `Client[]` (search, page, limit)
