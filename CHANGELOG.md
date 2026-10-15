@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Categorías de producto con CRUD y gestión rápida (ADMIN-200)** — Soporte de categorías opcionales en productos, selector con creación rápida en modal de producto, modal de gestión de categorías en listado con creación y eliminación confirmada, tipos y hooks actualizados, documentación de contratos y POS actualizada.
+
 ### Fixed
 - **Crash IndexedDB tras login (ADMIN-112)** — la capa offline persistía en un object
   store por namespace (`rq-<ns>`), pero los object stores solo se crean en la PRIMERA
