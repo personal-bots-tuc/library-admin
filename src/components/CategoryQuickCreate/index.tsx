@@ -2,12 +2,7 @@ import { useState } from "react";
 import { useToast } from "../Toast/useToast";
 import Modal from "../Modal";
 import { createCategory } from "../../api/categories";
-
-interface CategoryQuickCreateProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onCreated: (id: string, name: string) => void;
-}
+import type { CategoryQuickCreateProps } from "./types";
 
 export function CategoryQuickCreate({ isOpen, onClose, onCreated }: CategoryQuickCreateProps) {
   const [name, setName] = useState("");
