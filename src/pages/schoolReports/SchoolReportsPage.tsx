@@ -5,6 +5,7 @@ import {
   type SchoolReportRow,
 } from '../../api/schoolReports';
 import { MONTHS } from '../../api/schoolReports/types';
+import { downloadFile } from '../../lib/download';
 
 const FECHA = new Intl.DateTimeFormat('es-AR', {
   day: '2-digit',
@@ -73,15 +74,16 @@ export default function SchoolReportsPage() {
                     {FECHA.format(new Date(report.generatedAt))}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <a
-                      href={schoolReportPdfUrl(report.periodId)}
-                      target="_blank"
-                      rel="noreferrer"
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void downloadFile(schoolReportPdfUrl(report.periodId), 'informe.pdf')
+                      }
                       className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary-600 hover:underline"
                     >
                       <span className="material-icons text-sm">download</span>
                       Ver PDF
-                    </a>
+                    </button>
                   </td>
                 </tr>
               ))}
