@@ -9,8 +9,8 @@ export async function listSchoolReports(): Promise<SchoolReportRow[]> {
 }
 
 export function schoolReportPdfUrl(periodId: string): string {
-  const base = api.defaults.baseURL ?? '/api';
-  return `${base}/contaflow/school/periods/${periodId}/report/pdf`;
+  // Ruta RELATIVA: axios antepone baseURL UNA vez (evita /api/api/...).
+  return `/contaflow/school/periods/${periodId}/report/pdf`;
 }
 
 export type * from './types';
