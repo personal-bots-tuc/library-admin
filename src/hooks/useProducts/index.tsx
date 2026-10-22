@@ -1,23 +1,21 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { listProducts, type ListProductsParams, type ProductListResponse } from "../../api/products";
-import type { UseProductsReturn, UseProductsOptions, TypeFilter, ProductsState, FilterState } from "./types";
+import { useEffect, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { listProducts, type ListProductsParams } from '../../api/products';
+import type { UseProductsReturn, UseProductsOptions, TypeFilter, FilterState } from './types';
 
 const DEFAULT_LIMIT = 8;
 const DEFAULT_DEBOUNCE = 300;
 
 const initialFilterState: FilterState = {
-  search: "",
-  typeFilter: "all",
+  search: '',
+  typeFilter: 'all',
   lowStockOnly: false,
-  sortBy: "name",
-  sortOrder: "asc",
+  categoryId: null,
+  sortBy: 'name',
+  sortOrder: 'asc',
 };
 
-function buildApiParams(
-  filter: FilterState,
-  page: number,
-  limit: number
-): ListProductsParams {
+function buildApiParams(filter: FilterState, page: number, limit: number): ListProductsParams {
   const params: ListProductsParams = {
     active: true,
     page,
@@ -27,167 +25,122 @@ function buildApiParams(
   };
 
   if (filter.search.trim()) params.search = filter.search.trim();
-  if (filter.typeFilter !== "all") params.type = filter.typeFilter;
+  if (filter.typeFilter !== 'all') params.type = filter.typeFilter;
   if (filter.lowStockOnly) params.lowStock = true;
+  if (filter.categoryId) params.categoryId = filter.categoryId;
 
   return params;
 }
 
-function createInitialState(initialParams: UseProductsOptions["initialParams"]): ProductsState {
-  return {
-    products: [],
-    total: 0,
-    totalPages: 1,
-    page: initialParams?.page ?? 1,
-    limit: initialParams?.limit ?? DEFAULT_LIMIT,
-    loading: true,
-    error: null,
-  };
-}
-
-function createInitialFilter(initialParams: UseProductsOptions["initialParams"]): FilterState {
+function createInitialFilter(initialParams: UseProductsOptions['initialParams']): FilterState {
   const p = initialParams ?? {};
   return {
     ...initialFilterState,
-    search: p.search ?? "",
-    typeFilter: p.type ?? "all",
+    search: p.search ?? '',
+    typeFilter: p.type ?? 'all',
     lowStockOnly: p.lowStock ?? false,
-    sortBy: p.sortBy ?? "name",
-    sortOrder: p.sortOrder ?? "asc",
+    sortBy: p.sortBy ?? 'name',
+    sortOrder: p.sortOrder ?? 'asc',
   };
 }
 
 function extractErrorMessage(err: unknown): string {
-  let message = "Error cargando productos";
-  if (err && typeof err === "object" && "response" in err) {
+  if (err && typeof err === 'object' && 'response' in err) {
     const response = (err as { response?: { data?: { message?: string } } }).response;
     if (response?.data?.message) {
-      message = response.data.message;
+      return response.data.message;
     }
   } else if (err instanceof Error) {
-    message = err.message;
+    return err.message;
   }
-  return message;
+  return 'Error cargando productos';
 }
 
-export function useProducts(options: UseProductsOptions = {}): UseProductsReturn {
-  const { initialParams = {}, debounceMs = DEFAULT_DEBOUNCE } = options;
-
-  const [state, setState] = useState<ProductsState>(() => createInitialState(initialParams));
+/** Estado de filtros + paginación con sus setters (extraído para mantener baja
+ *  la complejidad del hook público). */
+function useProductsState(initialParams: UseProductsOptions['initialParams']) {
   const [filter, setFilter] = useState<FilterState>(() => createInitialFilter(initialParams));
+  const [page, setPage] = useState(initialParams?.page ?? 1);
+  const [limit, setLimitState] = useState(initialParams?.limit ?? DEFAULT_LIMIT);
 
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cancelledRef = useRef(false);
-
-  const fetchProducts = useCallback(async (params: ListProductsParams) => {
-    setState(prev => ({ ...prev, loading: true, error: null }));
-
-    try {
-      const data: ProductListResponse = await listProducts(params);
-      if (!cancelledRef.current) {
-        setState(prev => ({
-          ...prev,
-          products: data.items,
-          total: data.total,
-          totalPages: data.totalPages,
-          loading: false,
-        }));
-      }
-    } catch (err: unknown) {
-      if (!cancelledRef.current) {
-        const message = extractErrorMessage(err);
-        setState(prev => ({
-          ...prev,
-          error: message,
-          products: [],
-          total: 0,
-          totalPages: 1,
-          loading: false,
-        }));
-      }
-    }
-  }, []);
-
-  // Efecto principal con debounce
-  useEffect(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-    }
-
-    cancelledRef.current = false;
-
-    debounceTimerRef.current = setTimeout(() => {
-      fetchProducts(buildApiParams(filter, state.page, state.limit));
-    }, debounceMs);
-
-    return () => {
-      cancelledRef.current = true;
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [filter, state.page, state.limit, fetchProducts, debounceMs]);
-
-  // Acciones
-  const setPage = useCallback((newPage: number) => {
-    setState(prev => ({
-      ...prev,
-      page: Math.max(1, Math.min(newPage, prev.totalPages || 1)),
-    }));
-  }, []);
-
-  const setLimit = useCallback((newLimit: number) => {
-    setState(prev => ({ ...prev, limit: newLimit, page: 1 }));
-  }, []);
-
-  const setSearch = useCallback((search: string) => {
-    setFilter(prev => ({ ...prev, search }));
-    setState(prev => ({ ...prev, page: 1 }));
-  }, []);
-
-  const setTypeFilter = useCallback((typeFilter: TypeFilter) => {
-    setFilter(prev => ({ ...prev, typeFilter }));
-    setState(prev => ({ ...prev, page: 1 }));
-  }, []);
-
-  const setLowStockOnly = useCallback((lowStockOnly: boolean) => {
-    setFilter(prev => ({ ...prev, lowStockOnly }));
-    setState(prev => ({ ...prev, page: 1 }));
-  }, []);
-
-  const setSort = useCallback((sortBy: string, sortOrder: "asc" | "desc") => {
-    setFilter(prev => ({ ...prev, sortBy, sortOrder }));
-    setState(prev => ({ ...prev, page: 1 }));
-  }, []);
-
-  const refetch = useCallback(async () => {
-    await fetchProducts(buildApiParams(filter, state.page, state.limit));
-  }, [fetchProducts, filter, state.page, state.limit]);
-
-  // Cleanup al desmontar
-  useEffect(() => {
-    return () => {
-      cancelledRef.current = true;
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, []);
+  const patchFilter = (patch: Partial<FilterState>) => {
+    setFilter(prev => ({ ...prev, ...patch }));
+    setPage(1);
+  };
 
   return {
-    products: state.products,
-    total: state.total,
-    totalPages: state.totalPages,
+    filter,
+    page,
+    limit,
+    goToPage: (newPage: number, totalPages: number) => {
+      setPage(Math.max(1, Math.min(newPage, totalPages || 1)));
+    },
+    setLimit: (newLimit: number) => {
+      setLimitState(newLimit);
+      setPage(1);
+    },
+    setSearch: (search: string) => patchFilter({ search }),
+    setTypeFilter: (typeFilter: TypeFilter) => patchFilter({ typeFilter }),
+    setLowStockOnly: (lowStockOnly: boolean) => patchFilter({ lowStockOnly }),
+    setCategoryId: (categoryId: string | null) => patchFilter({ categoryId }),
+    setSort: (sortBy: string, sortOrder: 'asc' | 'desc') => patchFilter({ sortBy, sortOrder }),
+  };
+}
+
+/** Debounce del texto de búsqueda antes de componer la queryKey. */
+function useDebouncedSearch(search: string, debounceMs: number): string {
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), debounceMs);
+    return () => clearTimeout(timer);
+  }, [search, debounceMs]);
+  return debouncedSearch;
+}
+
+/**
+ * Listado paginado de productos — migrado a React Query:
+ * - cache compartido por clave de parámetros (volver a un filtro ya visto es
+ *   instantáneo y no repite request dentro del staleTime)
+ * - la búsqueda mantiene su debounce antes de tocar el servidor
+ * - placeholderData conserva la página anterior durante transiciones
+ */
+export function useProducts(options: UseProductsOptions = {}): UseProductsReturn {
+  const { initialParams, debounceMs } = options;
+  const state = useProductsState(initialParams);
+  const debouncedSearch = useDebouncedSearch(state.filter.search, debounceMs ?? DEFAULT_DEBOUNCE);
+
+  const params = buildApiParams(
+    { ...state.filter, search: debouncedSearch },
+    state.page,
+    state.limit
+  );
+
+  const query = useQuery({
+    queryKey: ['products', 'list', params],
+    queryFn: () => listProducts(params),
+    placeholderData: keepPreviousData,
+    staleTime: 60_000,
+  });
+
+  const totalPages = query.data?.totalPages ?? 1;
+
+  return {
+    products: query.data?.items ?? [],
+    total: query.data?.total ?? 0,
+    totalPages,
     page: state.page,
     limit: state.limit,
-    loading: state.loading,
-    error: state.error,
-    setPage,
-    setLimit,
-    setSearch,
-    setTypeFilter,
-    setLowStockOnly,
-    setSort,
-    refetch,
+    loading: query.isPending,
+    error: query.error ? extractErrorMessage(query.error) : null,
+    setPage: (newPage: number) => state.goToPage(newPage, totalPages),
+    setLimit: state.setLimit,
+    setSearch: state.setSearch,
+    setTypeFilter: state.setTypeFilter,
+    setLowStockOnly: state.setLowStockOnly,
+    setCategoryId: state.setCategoryId,
+    setSort: state.setSort,
+    refetch: async () => {
+      await query.refetch();
+    },
   };
 }

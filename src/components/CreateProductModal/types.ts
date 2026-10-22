@@ -8,6 +8,7 @@ export interface CreateProductForm {
   stock: number;
   minStock?: number;
   code?: string;
+  categoryId?: string | null;
 }
 
 export interface CreateProductModalProps {
@@ -23,5 +24,6 @@ export interface CreateProductModalProps {
     stock: number;
     minStock?: number;
     code?: string;
+    categoryId?: string | null;
   };
 }

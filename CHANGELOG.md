@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Categorías de producto con CRUD y gestión rápida (ADMIN-200)** — Soporte de categorías opcionales en productos, selector con creación rápida en modal de producto, modal de gestión de categorías en listado con creación y eliminación confirmada, tipos y hooks actualizados, documentación de contratos y POS actualizada.
+
+### Fixed
+- **Crash IndexedDB tras login (ADMIN-112)** — la capa offline persistía en un object
+  store por namespace (`rq-<ns>`), pero los object stores solo se crean en la PRIMERA
+  apertura de la DB: el namespace `anon` (login) creaba la DB y todo namespace posterior
+  explotaba con `NotFoundError: object store not found` en cada mutation. Ahora: un solo
+  store fijo, namespace como prefijo de key, DB renombrada a `admin-offline-cache-v2`
+  con limpieza de la legacy.
+- **Botón "Nuevo producto" restaurado** — se perdió en el refactor Preciero (12-oct,
+  commit `e496c11`) cuando `ProductsPage` se dividió en `ProductsLayout` +
+  `ProductsListPage` y el `primaryAction` no se reconectó; el modal quedó montado sin
+  trigger. Regresión preexistente, no relacionada a ADMIN-111.
+
+### Added
+- **Optimización de costos Railway (App Sleep) + offline-first de lectura (ADMIN-111)** —
+  (1) React Query + persistencia IndexedDB namespaced por `schoolId:userId` con purga en
+  logout (mismo patrón que POS).
+  (2) `MessagesPage` (bandeja del bot): eliminados los dos `setInterval` de 8s — ahora
+  queries con compuertas de `useSyncGate` (pestaña visible + actividad <10min), backoff
+  8s→60s sin cambios en la lista, e invalidación instantánea tras pausar/reanudar/responder
+  (antes: ~900 req/hora/tab aun en background).
+  (3) `useAllProducts`/`useProducts`/`useSchool` migrados a queries (cache compartido,
+  debounce de búsqueda preservado, `keepPreviousData` en paginación).
+  (4) PWA: `public/sw.js` hand-rolled con passthrough de `/config.js` y `/health`,
+  manifest y banner de actualización.
+  (5) `ConnectivityBadge` informativo (detección pasiva; sin health-pings que romperían
+  App Sleep).
+  (6) Guardrail de CI `npm run guardrails` (`ci/guardrails.mjs`) idéntico al de POS.
+
+### Fixed
+- **Sales: la columna "Fecha / Hora" muestra fecha y hora** — La tabla del historial de ventas mostraba solo la hora aunque el backend ya devuelve el timestamp completo (`createdAt` ISO 8601). La celda ahora apila fecha (dd/mm/yyyy) sobre hora (HH:mm). En el mismo PR: los montos de la tabla y los KPIs pasan a formatearse en pesos argentinos con el helper compartido `money` de `lib/format` (antes `toLocaleString("en-US", USD)` — inconsistente con los modales de la misma pantalla), corrección de `colSpan`/celdas del skeleton (9 → 8, igualando al header), fixtures de tests alineados al contrato real (`SaleListResult.items`, `SalesSummary`) y refactor de `SalesPage` extrayendo `hooks/useSalesPage` + componentes `SaleTableRow`/`SalesFilters`/`SalesTable`/`SalesSummaryKPIs`, eliminando los 7 errores de lint preexistentes del archivo que bloqueaban commit/CI. [ADMIN-110]
+
 ### Fixed
 - **Login con bucle de recarga infinito (`GET /settings` → 401)** — `SchoolProvider` fetcheaba `/settings` (endpoint protegido con `authMiddleware + requireAdmin`) sin sesión desde el bootstrap, incluyendo la pantalla `/login`; el interceptor de axios respondía al 401 con `window.location.href = '/login'` (recarga dura incluso estando en `/login`), generando un loop que impedía iniciar sesión. Fixes: (1) `useSchool` solo fetchea settings cuando hay sesión (`isAuthenticated` de `useAuth`) y limpia el estado al cerrar sesión; (2) el interceptor 401 no limpia storage ni redirige cuando ya se está en `/login`. [ADMIN-109]
 

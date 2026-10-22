@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   listConversations,
   getConversation,
@@ -7,19 +8,25 @@ import {
   replyConversation,
   type ConversationSummary,
   type ConversationDetail,
-} from "../../api/bot";
+} from '../../api/bot';
+import { useSyncGate } from '../../hooks/useSyncGate';
 
-const POLL_MS = 8000;
+const POLL_BASE_MS = 8000;
+const POLL_MAX_MS = 60000;
+/** Thread abierto: poll base mientras la compuerta esté abierta. */
+const THREAD_POLL_MS = 8000;
 
-type ConversationStatus = "bot" | "human";
-type ConversationRole = "user" | "assistant" | "human";
+const CONVERSATIONS_KEY = ['bot', 'conversations'] as const;
+
+type ConversationStatus = 'bot' | 'human';
+type ConversationRole = 'user' | 'assistant' | 'human';
 
 interface StatusBadgeProps {
   status: ConversationStatus;
 }
 
 const StatusBadge = ({ status }: StatusBadgeProps) =>
-  status === "human" ? (
+  status === 'human' ? (
     <span className="px-2 py-1 text-[10px] font-bold uppercase rounded bg-amber-100 text-amber-700 tracking-wider">
       ✋ Intervenida
     </span>
@@ -32,7 +39,7 @@ const StatusBadge = ({ status }: StatusBadgeProps) =>
 const timeAgo = (iso: string): string => {
   const diff = Date.now() - new Date(iso).getTime();
   const min = Math.floor(diff / 60000);
-  if (min < 1) return "ahora";
+  if (min < 1) return 'ahora';
   if (min < 60) return `hace ${min} min`;
   const h = Math.floor(min / 60);
   if (h < 24) return `hace ${h} h`;
@@ -40,53 +47,64 @@ const timeAgo = (iso: string): string => {
 };
 
 const formatTime = (iso: string): string =>
-  new Date(iso).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
 const ROLE_STYLES: Record<ConversationRole, string> = {
-  user: "bg-neutral-100 text-neutral-800 rounded-xl rounded-tl-sm",
-  assistant: "bg-blue-600 text-white rounded-xl rounded-tr-sm",
-  human: "bg-amber-500 text-white rounded-xl rounded-tr-sm",
+  user: 'bg-neutral-100 text-neutral-800 rounded-xl rounded-tl-sm',
+  assistant: 'bg-blue-600 text-white rounded-xl rounded-tr-sm',
+  human: 'bg-amber-500 text-white rounded-xl rounded-tr-sm',
 };
 
 const ROLE_LABEL: Record<ConversationRole, string> = {
-  user: "Cliente",
-  assistant: "Bot",
-  human: "Vendedor",
+  user: 'Cliente',
+  assistant: 'Bot',
+  human: 'Vendedor',
 };
 
 interface ConversationListProps {
   conversations: ConversationSummary[];
   loading: boolean;
-  filter: "all" | "bot" | "human";
+  filter: 'all' | 'bot' | 'human';
   selectedId: string | null;
-  onFilterChange: (filter: "all" | "bot" | "human") => void;
+  onFilterChange: (filter: 'all' | 'bot' | 'human') => void;
   onOpen: (id: string) => void;
 }
 
-const ConversationList = ({ conversations, loading, filter, selectedId, onFilterChange, onOpen }: ConversationListProps) => (
+const ConversationList = ({
+  conversations,
+  loading,
+  filter,
+  selectedId,
+  onFilterChange,
+  onOpen,
+}: ConversationListProps) => (
   <aside className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm flex flex-col h-full min-h-0">
     <div className="flex gap-1 p-3 border-b border-neutral-200 bg-neutral-50 shrink-0">
-      {(["all", "bot", "human"] as const).map(f => (
+      {(['all', 'bot', 'human'] as const).map(f => (
         <button
           key={f}
           type="button"
           onClick={() => onFilterChange(f)}
           className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-            filter === f ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500 hover:text-neutral-700"
+            filter === f
+              ? 'bg-white text-neutral-900 shadow-sm'
+              : 'text-neutral-500 hover:text-neutral-700'
           }`}
         >
-          {f === "all" ? "Todas" : f === "bot" ? "🤖 Bot" : "✋ Intervenidas"}
+          {f === 'all' ? 'Todas' : f === 'bot' ? '🤖 Bot' : '✋ Intervenidas'}
         </button>
       ))}
     </div>
     <div className="overflow-y-auto flex-1 min-h-0">
       {loading ? (
         <div className="p-6 space-y-3">
-          {[1, 2, 3].map(i => <div key={i} className="h-16 bg-neutral-100 rounded-lg animate-pulse" />)}
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-16 bg-neutral-100 rounded-lg animate-pulse" />
+          ))}
         </div>
       ) : conversations.length === 0 ? (
         <p className="p-6 text-sm text-neutral-400 text-center">
-          Todavía no hay conversaciones{filter !== "all" ? " con ese filtro" : ""}.
+          Todavía no hay conversaciones{filter !== 'all' ? ' con ese filtro' : ''}.
         </p>
       ) : (
         conversations.map(c => (
@@ -95,7 +113,7 @@ const ConversationList = ({ conversations, loading, filter, selectedId, onFilter
             type="button"
             onClick={() => onOpen(c.id)}
             className={`w-full text-left px-4 py-3 border-b border-neutral-100 transition-colors ${
-              selectedId === c.id ? "bg-blue-50" : "hover:bg-neutral-50"
+              selectedId === c.id ? 'bg-blue-50' : 'hover:bg-neutral-50'
             }`}
           >
             <div className="flex items-center justify-between gap-2 mb-1">
@@ -116,19 +134,27 @@ interface ConversationThreadProps {
   onBack: () => void;
   onPause: () => void;
   onResume: () => void;
+  onReply: (message: string) => Promise<void>;
   threadRef: React.RefObject<HTMLDivElement | null>;
 }
 
-const ConversationThread = ({ conversation, onBack, onPause, onResume, threadRef }: ConversationThreadProps) => {
-  const [replyText, setReplyText] = useState("");
+const ConversationThread = ({
+  conversation,
+  onBack,
+  onPause,
+  onResume,
+  onReply,
+  threadRef,
+}: ConversationThreadProps) => {
+  const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
 
   const handleReply = async () => {
     if (!replyText.trim() || sending) return;
     setSending(true);
     try {
-      await replyConversation(conversation.id, replyText.trim());
-      setReplyText("");
+      await onReply(replyText.trim());
+      setReplyText('');
     } finally {
       setSending(false);
     }
@@ -147,11 +173,15 @@ const ConversationThread = ({ conversation, onBack, onPause, onResume, threadRef
           <span className="material-icons text-[20px]">arrow_back</span>
         </button>
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-neutral-900 truncate">Sesión {conversation.sessionId.slice(0, 16)}…</p>
-          <div className="mt-1"><StatusBadge status={conversation.status} /></div>
+          <p className="text-sm font-semibold text-neutral-900 truncate">
+            Sesión {conversation.sessionId.slice(0, 16)}…
+          </p>
+          <div className="mt-1">
+            <StatusBadge status={conversation.status} />
+          </div>
         </div>
         <div className="ml-auto shrink-0">
-          {conversation.status === "bot" ? (
+          {conversation.status === 'bot' ? (
             <button
               type="button"
               onClick={onPause}
@@ -171,12 +201,15 @@ const ConversationThread = ({ conversation, onBack, onPause, onResume, threadRef
         </div>
       </header>
 
-      <div ref={threadRef} className="flex-1 overflow-y-auto min-h-0 p-5 space-y-3 bg-neutral-50/50">
+      <div
+        ref={threadRef}
+        className="flex-1 overflow-y-auto min-h-0 p-5 space-y-3 bg-neutral-50/50"
+      >
         {conversation.messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-start" : "justify-end"}`}>
+          <div key={i} className={`flex ${m.role === 'user' ? 'justify-start' : 'justify-end'}`}>
             <div className="max-w-[75%]">
               <p className="text-[10px] font-medium text-neutral-400 mb-1 text-right">
-                {ROLE_LABEL[m.role]} · {m.createdAt ? formatTime(m.createdAt) : ""}
+                {ROLE_LABEL[m.role]} · {m.createdAt ? formatTime(m.createdAt) : ''}
               </p>
               <div className={`px-4 py-2.5 text-sm whitespace-pre-wrap ${ROLE_STYLES[m.role]}`}>
                 {m.content}
@@ -186,14 +219,14 @@ const ConversationThread = ({ conversation, onBack, onPause, onResume, threadRef
         ))}
       </div>
 
-      {conversation.status === "human" && (
+      {conversation.status === 'human' && (
         <footer className="p-4 border-t border-neutral-200 shrink-0">
           <div className="flex gap-2">
             <input
               type="text"
               value={replyText}
               onChange={e => setReplyText(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && void handleReply()}
+              onKeyDown={e => e.key === 'Enter' && void handleReply()}
               placeholder="Escribí tu respuesta al cliente…"
               className="flex-1 px-4 py-2.5 text-sm border border-neutral-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
             />
@@ -203,11 +236,12 @@ const ConversationThread = ({ conversation, onBack, onPause, onResume, threadRef
               disabled={sending || !replyText.trim()}
               className="px-5 py-2.5 text-sm font-semibold text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors disabled:opacity-50"
             >
-              {sending ? "Enviando…" : "Responder"}
+              {sending ? 'Enviando…' : 'Responder'}
             </button>
           </div>
           <p className="text-[11px] text-neutral-400 mt-2">
-            El bot está pausado en esta conversación — el cliente ve tus respuestas cuando vuelva a abrir el chat.
+            El bot está pausado en esta conversación — el cliente ve tus respuestas cuando vuelva a
+            abrir el chat.
           </p>
         </footer>
       )}
@@ -216,74 +250,106 @@ const ConversationThread = ({ conversation, onBack, onPause, onResume, threadRef
 };
 
 const MessagesPage = () => {
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [selected, setSelected] = useState<ConversationDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<"all" | "bot" | "human">("all");
+  const queryClient = useQueryClient();
+  const syncAllowed = useSyncGate();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<'all' | 'bot' | 'human'>('all');
   const threadRef = useRef<HTMLDivElement>(null);
 
-  const loadConversations = useCallback(async () => {
-    try {
+  // Backoff sin cambios: 8s → 16s → 32s → 60s tope. Se resetea si la firma
+  // de la lista cambia (llegó mensaje nuevo) o al interactuar con filtros.
+  const listSigRef = useRef<string | null>(null);
+  const listQuietRef = useRef(0);
+
+  const conversationsQuery = useQuery({
+    queryKey: [...CONVERSATIONS_KEY, filter],
+    queryFn: async () => {
       const result = await listConversations({
-        ...(filter !== "all" ? { status: filter } : {}),
+        ...(filter !== 'all' ? { status: filter } : {}),
         limit: 30,
       });
-      setConversations(result.items);
-    } catch {
-      // silencioso: la bandeja refresca por polling
-    } finally {
-      setLoading(false);
-    }
-  }, [filter]);
+      return result.items;
+    },
+    // Errores silenciosos: se conserva la data previa (sin placeholder destruido).
+    refetchInterval: q => {
+      if (!syncAllowed) return false;
+      const items = q.state.data;
+      const sig = items
+        ? items.map(c => `${c.id}:${c.messageCount}:${c.lastMessageAt}`).join(',')
+        : null;
+      if (sig && sig === listSigRef.current) {
+        listQuietRef.current = Math.min(listQuietRef.current + 1, 3);
+      } else {
+        listQuietRef.current = 0;
+        listSigRef.current = sig;
+      }
+      return Math.min(POLL_BASE_MS * 2 ** listQuietRef.current, POLL_MAX_MS);
+    },
+  });
 
-  const openConversation = useCallback(async (id: string) => {
-    const detail = await getConversation(id);
-    setSelected(detail);
+  const conversations = conversationsQuery.data ?? [];
+  const loading = conversationsQuery.isPending;
+
+  const threadQuery = useQuery({
+    queryKey: ['bot', 'conversation', selectedId],
+    queryFn: async () => {
+      if (!selectedId) throw new Error('sin conversación seleccionada');
+      return getConversation(selectedId);
+    },
+    enabled: !!selectedId,
+    refetchInterval: syncAllowed && selectedId ? THREAD_POLL_MS : false,
+  });
+
+  const selected = threadQuery.data ?? null;
+
+  const openConversation = useCallback((id: string) => {
+    setSelectedId(id);
   }, []);
-
-  const refreshSelected = useCallback(async () => {
-    if (!selected) return;
-    try {
-      const detail = await getConversation(selected.id);
-      setSelected(detail);
-    } catch {
-      // conversación pudo ser purgada
-    }
-  }, [selected]);
-
-  useEffect(() => {
-    void loadConversations();
-    const interval = setInterval(() => void loadConversations(), POLL_MS);
-    return () => clearInterval(interval);
-  }, [loadConversations]);
-
-  useEffect(() => {
-    if (selected) {
-      const interval = setInterval(() => void refreshSelected(), POLL_MS);
-      return () => clearInterval(interval);
-    }
-  }, [selected, refreshSelected]);
 
   useEffect(() => {
     threadRef.current?.scrollTo({ top: threadRef.current.scrollHeight });
   }, [selected?.messages.length]);
 
+  const invalidateAll = async () => {
+    await queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+    if (selectedId) {
+      await queryClient.invalidateQueries({ queryKey: ['bot', 'conversation', selectedId] });
+    }
+  };
+
+  const pauseMutation = useMutation({
+    mutationFn: (id: string) => pauseConversation(id),
+    onSuccess: invalidateAll,
+  });
+  const resumeMutation = useMutation({
+    mutationFn: (id: string) => resumeConversation(id),
+    onSuccess: invalidateAll,
+  });
+  const replyMutation = useMutation({
+    mutationFn: ({ id, message }: { id: string; message: string }) =>
+      replyConversation(id, message),
+    onSuccess: invalidateAll,
+  });
+
   const handlePause = async () => {
-    if (!selected) return;
-    setSelected(await pauseConversation(selected.id));
-    void loadConversations();
+    if (!selectedId) return;
+    await pauseMutation.mutateAsync(selectedId);
   };
 
   const handleResume = async () => {
-    if (!selected) return;
-    setSelected(await resumeConversation(selected.id));
-    void loadConversations();
+    if (!selectedId) return;
+    await resumeMutation.mutateAsync(selectedId);
+  };
+
+  const handleReply = async (message: string) => {
+    if (!selectedId) return;
+    await replyMutation.mutateAsync({ id: selectedId, message });
   };
 
   return (
     <div className="h-full min-h-0 grid grid-cols-1 lg:grid-cols-[340px,1fr] gap-4">
       {/* lg+: lista y chat lado a lado. Mobile/tablet: lista, o chat si hay uno abierto. */}
-      <div className={`${selected ? "hidden lg:block" : "block"} h-full min-h-0`}>
+      <div className={`${selected ? 'hidden lg:block' : 'block'} h-full min-h-0`}>
         <ConversationList
           conversations={conversations}
           loading={loading}
@@ -297,9 +363,10 @@ const MessagesPage = () => {
       {selected ? (
         <ConversationThread
           conversation={selected}
-          onBack={() => setSelected(null)}
+          onBack={() => setSelectedId(null)}
           onPause={() => void handlePause()}
           onResume={() => void handleResume()}
+          onReply={handleReply}
           threadRef={threadRef}
         />
       ) : (

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Modal from '../../components/Modal';
 import CreateProductModal from '../../components/CreateProductModal';
+import CategoriesManagerModal from '../../components/CategoriesManagerModal';
 import { money } from '../../lib/format';
 import { unitMarginPercent, formatPercent } from '../../lib/profit';
 import { getProductCounts, deleteProduct, type Product } from '../../api/products';
@@ -50,6 +51,7 @@ export default function ProductsListPage() {
     setLimit,
     setTypeFilter,
     setLowStockOnly,
+    setCategoryId,
     setSort,
     setSearch: setSearchProducts,
     refetch,
@@ -72,6 +74,7 @@ export default function ProductsListPage() {
   const [lowStockCount, setLowStockCount] = useState(0);
   const [typeFilter, setTypeFilterState] = useState<TypeFilter>('all');
   const [lowStockOnly, setLowStockOnlyState] = useState(false);
+  const [categoryId, setCategoryIdState] = useState<string | null>(null);
   const [sort, setSortState] = useState<SortOption>('name-asc');
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -79,6 +82,7 @@ export default function ProductsListPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
   const isInitialMountRef = useRef(true);
   const { schoolName } = useSchool();
 
@@ -119,6 +123,14 @@ export default function ProductsListPage() {
       setLowStockOnly(value);
     },
     [setLowStockOnly]
+  );
+
+  const handleCategoryChange = useCallback(
+    (value: string | null) => {
+      setCategoryIdState(value);
+      setCategoryId(value);
+    },
+    [setCategoryId]
   );
 
   const handleSortChange = useCallback(
@@ -226,6 +238,8 @@ export default function ProductsListPage() {
         )}
       </Modal>
 
+      <CategoriesManagerModal isOpen={categoriesModalOpen} onClose={() => setCategoriesModalOpen(false)} />
+
       <div className="grid grid-cols-3 gap-4">
         <SummaryCard
           icon="inventory_2"
@@ -274,6 +288,15 @@ export default function ProductsListPage() {
         </select>
 
         <select
+          value={categoryId ?? ''}
+          onChange={e => handleCategoryChange(e.target.value || null)}
+          className="px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-700 focus:border-primary-500 focus:outline-none"
+        >
+          <option value="">Todas las categorías</option>
+          {/* Opciones de categorías se cargarán desde API */}
+        </select>
+
+        <select
           value={sort}
           onChange={e => handleSortChange(e.target.value as SortOption)}
           className="px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-700 focus:border-primary-500 focus:outline-none"
@@ -289,12 +312,22 @@ export default function ProductsListPage() {
           onClick={() => {
             handleLowStockChange(false);
             handleTypeFilterChange('all');
+            handleCategoryChange(null);
             handleSortChange('name-asc');
             handlePageChange(1);
           }}
           className="text-xs text-neutral-500 hover:text-neutral-700"
         >
           Limpiar filtros
+        </button>
+
+        <button
+          onClick={() => setCategoriesModalOpen(true)}
+          className="px-3 py-1.5 text-xs font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 flex items-center gap-1.5"
+          aria-label="Gestionar categorías"
+        >
+          <span className="material-icons text-sm">category</span>
+          Categorías
         </button>
 
         <button
@@ -309,7 +342,7 @@ export default function ProductsListPage() {
         <button
           onClick={() => setPrintModalOpen(true)}
           disabled={loading}
-          className="ml-auto px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+          className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
           aria-label="Imprimir listado de productos"
         >
           <span className="material-icons text-sm">print</span>

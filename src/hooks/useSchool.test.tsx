@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, waitFor } from '@testing-library/react';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './useAuth';
 import { useSchool, SchoolProvider } from './useSchool';
+import { createTestQueryClient } from '../test/utils';
 import { getSettings, type Settings } from '../api/settings';
 
 // Mock the schools API
@@ -55,9 +57,11 @@ const TestComponent = () => {
 const renderSchool = (fallbackName: string) =>
   render(
     <AuthProvider>
-      <SchoolProvider fallbackName={fallbackName}>
-        <TestComponent />
-      </SchoolProvider>
+      <QueryClientProvider client={createTestQueryClient()}>
+        <SchoolProvider fallbackName={fallbackName}>
+          <TestComponent />
+        </SchoolProvider>
+      </QueryClientProvider>
     </AuthProvider>
   );
 
@@ -107,9 +111,11 @@ describe('useSchool', () => {
     authenticate({ email: 'admin@test.com', role: 'admin' }); // sin schoolId
     mockGetSettings.mockResolvedValue({ ...BASE_SETTINGS, labelBusinessName: 'Sucursal Centro' });
 
-    const { findByTestId } = renderSchool('Test');
+    const { getByTestId } = renderSchool('Test');
 
-    expect(await findByTestId('school-name')).toHaveTextContent('Sucursal Centro');
+    await waitFor(() => {
+      expect(getByTestId('school-name')).toHaveTextContent('Sucursal Centro');
+    });
     expect(mockGetSettings).toHaveBeenCalled();
   });
 
