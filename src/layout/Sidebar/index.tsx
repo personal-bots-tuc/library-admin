@@ -1,18 +1,19 @@
 import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { useSchool } from '../hooks/useSchool';
+import { useAuth } from '../../hooks/useAuth';
+import { useSchool } from '../../hooks/useSchool';
+import type { NavItem, SidebarBrandProps, SidebarFooterProps, SidebarNavItemProps } from './types';
 
 const SIDEBAR_STORAGE_KEY = 'sidebarCollapsed';
 
-const superAdminNav = [
+const superAdminNav: NavItem[] = [
   { to: '/admins', label: 'Administradores', icon: 'manage_accounts' },
   { to: '/schools', label: 'Escuelas', icon: 'school' },
   { to: '/bots', label: 'Bots de ventas', icon: 'smart_toy' },
   { to: '/accountants', label: 'Contadores', icon: 'calculate' },
 ];
 
-const adminNav = [
+const adminNav: NavItem[] = [
   { to: '/dashboard', label: 'Dashboard', icon: 'dashboard' },
   { to: '/products', label: 'Productos', icon: 'inventory_2' },
   { to: '/sales', label: 'Ventas', icon: 'receipt_long' },
@@ -25,39 +26,31 @@ const adminNav = [
   { to: '/settings', label: 'Configuración', icon: 'settings' },
 ];
 
-function readCollapsed(): boolean {
+const readCollapsed = (): boolean => {
   try {
     return localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
   } catch {
     return false;
   }
-}
+};
 
-function writeCollapsed(collapsed: boolean) {
+const writeCollapsed = (collapsed: boolean) => {
   try {
     localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
   } catch {
-    // Sin almacenamiento disponible la preferencia dura solo la sesión actual.
+    return;
   }
-}
+};
 
-function getInitials(name: string | undefined): string {
-  if (!name) return 'AD';
-  return name
+const getInitials = (name: string): string =>
+  name
     .split(' ')
     .map(n => n[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
-}
 
-interface BrandProps {
-  collapsed: boolean;
-  schoolName: string;
-  onToggle: () => void;
-}
-
-function SidebarBrand({ collapsed, schoolName, onToggle }: BrandProps) {
+const SidebarBrand = ({ collapsed, schoolName, onToggle }: SidebarBrandProps) => {
   return (
     <div
       className={`p-4 border-b border-neutral-200 flex items-center gap-3 ${collapsed ? 'flex-col' : ''}`}
@@ -85,17 +78,9 @@ function SidebarBrand({ collapsed, schoolName, onToggle }: BrandProps) {
       </button>
     </div>
   );
-}
+};
 
-interface NavItemProps {
-  to: string;
-  label: string;
-  icon: string;
-  end: boolean;
-  collapsed: boolean;
-}
-
-function SidebarNavItem({ to, label, icon, end, collapsed }: NavItemProps) {
+const SidebarNavItem = ({ to, label, icon, end, collapsed }: SidebarNavItemProps) => {
   return (
     <NavLink
       to={to}
@@ -116,17 +101,9 @@ function SidebarNavItem({ to, label, icon, end, collapsed }: NavItemProps) {
       {!collapsed && <span className="truncate">{label}</span>}
     </NavLink>
   );
-}
+};
 
-interface FooterProps {
-  collapsed: boolean;
-  name: string;
-  role: string;
-  initials: string;
-  onLogout: () => void;
-}
-
-function SidebarFooter({ collapsed, name, role, initials, onLogout }: FooterProps) {
+const SidebarFooter = ({ collapsed, name, role, initials, onLogout }: SidebarFooterProps) => {
   return (
     <div className="p-4 border-t border-neutral-200">
       <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
@@ -156,9 +133,9 @@ function SidebarFooter({ collapsed, name, role, initials, onLogout }: FooterProp
       </button>
     </div>
   );
-}
+};
 
-export default function Sidebar() {
+export const Sidebar = () => {
   const { user, logout, isSuperAdmin } = useAuth();
   const { schoolName } = useSchool();
   const [collapsed, setCollapsed] = useState(readCollapsed);
@@ -168,15 +145,13 @@ export default function Sidebar() {
     writeCollapsed(collapsed);
   }, [collapsed]);
 
+  const toggleCollapsed = () => setCollapsed(value => !value);
+
   return (
     <aside
       className={`${collapsed ? 'w-16' : 'w-64'} bg-white border-r border-neutral-200 flex flex-col h-screen sticky top-0 overflow-hidden transition-[width] duration-200`}
     >
-      <SidebarBrand
-        collapsed={collapsed}
-        schoolName={schoolName}
-        onToggle={() => setCollapsed(value => !value)}
-      />
+      <SidebarBrand collapsed={collapsed} schoolName={schoolName} onToggle={toggleCollapsed} />
 
       <nav className="flex-1 py-2">
         {nav.map(item => (
@@ -195,9 +170,9 @@ export default function Sidebar() {
         collapsed={collapsed}
         name={user?.name ?? 'Admin Demo'}
         role={user?.role?.toUpperCase() ?? 'ADMIN'}
-        initials={getInitials(user?.name)}
+        initials={user ? getInitials(user.name) : 'AD'}
         onLogout={logout}
       />
     </aside>
   );
-}
+};
