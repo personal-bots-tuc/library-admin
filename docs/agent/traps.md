@@ -1,7 +1,7 @@
 ---
 type: Traps
 version: <sha-corto>
-validated: 2026-10-13
+validated: 2026-10-27
 update_when: when new non-obvious behavior is confirmed
 ---
 
@@ -118,3 +118,14 @@ segundo namespace con `NotFoundError: object store not found` en cada persistenc
 upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Evidencia**: `src/lib/persistence.ts`, regression test multi-namespace en
 `src/lib/persistence.test.ts`.
+
+## Merge a `develop` no implica deploy a staging (2026-10-27)
+**Problema**: el PR #28 (ADMIN-203) se mergeó a `develop` y staging no se desplegó. El auto-deploy de Railway estaba deshabilitado; el último deployment de staging era del 2026-10-15.
+**Regla**: un merge no está entregado hasta que aparece un deployment nuevo en Railway para el ambiente correspondiente. Verificar con `railway deployment list -e staging` tras cada merge a `develop`.
+**Excepción documentada**: deploy manual desde `develop` con link explícito (`railway link -s library-admin -e staging -p <project-id>`, luego `railway up -e staging`). `railway status` sin `-e` apunta a **production**.
+**Evidencia**: `docs/DEPLOYMENT_PIPELINE.md` (estado del watcher), `railway deployment list -e staging`.
+
+## Husky pre-commit reformatea los archivos staged (2026-10-27)
+**Problema**: `.husky/pre-commit` ejecuta `eslint --fix` y `prettier --write` sobre los archivos staged. El contenido que se commitea puede diferir de lo que se escribió (comillas, saltos de línea de JSX), y el editor muestra el archivo "cambiado en disco".
+**Regla**: tras un commit, releer el archivo antes de seguir editándolo. El formato del commit es el válido; no revertirlo a mano.
+**Evidencia**: commits `c5af8c4` y `6afb5ae` de ADMIN-203 (`src/layout/Sidebar/index.tsx`, `src/layout/Layout.tsx`).
