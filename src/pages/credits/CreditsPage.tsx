@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   getCreditsSummary,
   listCredits,
@@ -10,6 +10,7 @@ import {
 } from '../../api/credits';
 import { exportToCSV } from '../../lib/exportToCSV';
 import { getDaysSince } from './components/Badges';
+import { toDebtorSearchTerm } from './utils/debtorSearch';
 import {
   CreditsKPIs,
   RecentHistoryPanel,
@@ -28,35 +29,72 @@ const CreditsPage = () => {
   const [summary, setSummary] = useState<CreditsSummary | null>(null);
   const [debtors, setDebtors] = useState<DebtorItem[]>([]);
   const [history, setHistory] = useState<RecentMovement[]>([]);
+  const [search, setSearch] = useState('');
+  // Objeto nuevo en cada disparo (búsqueda o refresh): aunque el término no cambie, el effect vuelve a correr.
+  const [query, setQuery] = useState({ term: '', id: 0 });
   const [loadingSummary, setLoadingSummary] = useState(true);
   const [loadingDebtors, setLoadingDebtors] = useState(true);
+  const [debtorsError, setDebtorsError] = useState('');
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [settleTarget, setSettleTarget] = useState<SettleTarget | null>(null);
   const [detailClient, setDetailClient] = useState<DebtorItem | null>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
-  const fetchAll = useCallback(async () => {
-    setLoadingSummary(true);
+  const [reloadCount, setReloadCount] = useState(0);
+
+  useEffect(() => () => clearTimeout(searchTimerRef.current), []);
+
+  useEffect(() => {
+    let stale = false;
+    Promise.all([getCreditsSummary(), getRecentHistory(5)])
+      .then(([s, h]) => {
+        if (stale) return;
+        setSummary(s);
+        setHistory(h || []);
+      })
+      .catch(e => console.error('Error cargando créditos', e))
+      .finally(() => {
+        if (stale) return;
+        setLoadingSummary(false);
+        setLoadingHistory(false);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [reloadCount]);
+
+  // El debounce vive en el handler (no en un effect) para que no dispare una carga al montar.
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
     setLoadingDebtors(true);
-    setLoadingHistory(true);
-    try {
-      const [s, d, h] = await Promise.all([
-        getCreditsSummary(),
-        listCredits({ limit: 50 }),
-        getRecentHistory(5),
-      ]);
-      setSummary(s);
-      setDebtors(d.items || []);
-      setHistory(h || []);
-    } catch (e) {
-      console.error('Error cargando créditos', e);
-    } finally {
-      setLoadingSummary(false);
-      setLoadingDebtors(false);
-      setLoadingHistory(false);
-    }
-  }, []);
+    clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setQuery(q => ({ term: value.trim(), id: q.id + 1 }));
+    }, 300);
+  };
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  // El flag `stale` descarta respuestas de búsquedas anteriores que lleguen tarde.
+  useEffect(() => {
+    let stale = false;
+    listCredits({ limit: 50, search: toDebtorSearchTerm(query.term) })
+      .then(d => {
+        if (stale) return;
+        setDebtors(d.items || []);
+        setDebtorsError('');
+      })
+      .catch(e => {
+        if (stale) return;
+        console.error('Error cargando deudores', e);
+        setDebtors([]);
+        setDebtorsError('No se pudieron cargar los deudores. Intentá de nuevo.');
+      })
+      .finally(() => {
+        if (!stale) setLoadingDebtors(false);
+      });
+    return () => {
+      stale = true;
+    };
+  }, [query]);
 
   const handleExport = () => {
     const flat = debtors.map(d => ({
@@ -64,16 +102,25 @@ const CreditsPage = () => {
       DNI: d.client.dni,
       Saldo: d.balance,
       UltimaActividad: d.lastCreditAt ? new Date(d.lastCreditAt).toLocaleDateString('es-AR') : '-',
-      Estado: d.balance <= 0 ? 'SALDADO' : getDaysSince(d.lastCreditAt) >= 30 ? 'VENCIDO' : 'VIGENTE',
+      Estado:
+        d.balance <= 0 ? 'SALDADO' : getDaysSince(d.lastCreditAt) >= 30 ? 'VENCIDO' : 'VIGENTE',
     }));
     exportToCSV(flat, 'deudores_cuentas_corrientes');
   };
 
-  const handleSettle = async (payload: { amount: number; method: 'cash' | 'transfer'; note?: string }) => {
+  const handleSettle = async (payload: {
+    amount: number;
+    method: 'cash' | 'transfer';
+    note?: string;
+  }) => {
     if (!settleTarget) return;
     await settleDebt(settleTarget.clientId, payload);
     setSettleTarget(null);
-    fetchAll();
+    setLoadingSummary(true);
+    setLoadingHistory(true);
+    setLoadingDebtors(true);
+    setReloadCount(c => c + 1);
+    setQuery(q => ({ ...q, id: q.id + 1 }));
   };
 
   const openDetail = (item: DebtorItem) => {
@@ -85,7 +132,9 @@ const CreditsPage = () => {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Cuentas corrientes</h1>
-          <p className="text-sm text-neutral-500 mt-1">Gestioná los saldos pendientes de tus clientes</p>
+          <p className="text-sm text-neutral-500 mt-1">
+            Gestioná los saldos pendientes de tus clientes
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -112,20 +161,22 @@ const CreditsPage = () => {
           <DebtorTable
             debtors={debtors}
             loading={loadingDebtors}
-            onSettle={(item) => setSettleTarget({
-              clientId: item.client.id,
-              clientName: item.client.fullName,
-              debt: item.balance,
-            })}
+            search={search}
+            onSearchChange={handleSearchChange}
+            error={debtorsError}
+            onSettle={item =>
+              setSettleTarget({
+                clientId: item.client.id,
+                clientName: item.client.fullName,
+                debt: item.balance,
+              })
+            }
             onViewDetail={openDetail}
           />
         </div>
 
         <div className="xl:col-span-1">
-          <RecentHistoryPanel
-            movements={history}
-            loading={loadingHistory}
-          />
+          <RecentHistoryPanel movements={history} loading={loadingHistory} />
         </div>
       </div>
 

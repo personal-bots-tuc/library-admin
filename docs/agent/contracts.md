@@ -70,6 +70,7 @@ scope:
 
 ### Credits (Devoluciones/Deudas)
 - `GET /credits` → `Credit[]` (filtros: clientId, status, overdue, page)
+- `GET /credits?search=&limit=` → `CreditsListResult` (consumido por `CreditsPage`; `search` filtra `fullName`/`dni` y se compila como `RegExp` en backend, ver `traps.md`)
 - `GET /credits/kpis` → `CreditKPIs` (totalDebt, overdueCount, avgDaysOverdue)
 - `GET /credits/:id` → `Credit`
 - `POST /credits` → `Credit` (desde POS)
