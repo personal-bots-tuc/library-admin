@@ -129,3 +129,8 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Problema**: `.husky/pre-commit` ejecuta `eslint --fix` y `prettier --write` sobre los archivos staged. El contenido que se commitea puede diferir de lo que se escribió (comillas, saltos de línea de JSX), y el editor muestra el archivo "cambiado en disco".
 **Regla**: tras un commit, releer el archivo antes de seguir editándolo. El formato del commit es el válido; no revertirlo a mano.
 **Evidencia**: commits `c5af8c4` y `6afb5ae` de ADMIN-203 (`src/layout/Sidebar/index.tsx`, `src/layout/Layout.tsx`).
+
+## `GET /credits?search=` compila regex sin escapar (2026-10-27)
+**Problema**: `ListCreditAccounts` (`api/internal/service/credits/list-credit-accounts.ts`) hace `new RegExp(input.search, 'i')`. Un término con `(`, `+`, `[` o `\` lanza `SyntaxError` (500) o cambia el significado de la búsqueda.
+**Solución**: el front escapa el término antes de enviarlo (`src/pages/credits/utils/debtorSearch.ts` → `toDebtorSearchTerm`). Si se consume este endpoint desde otro lugar, replicar el escape o arreglar el backend (escapar en el service).
+**Evidencia**: `src/pages/credits/utils/debtorSearch.test.ts`, `src/pages/credits/CreditsPage.test.tsx` ("envía el término escapado").

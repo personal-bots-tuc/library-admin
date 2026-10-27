@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Buscador de deudores en Cuentas corrientes** — la card "Detalle de deudores" suma un buscador por nombre, apellido o DNI. Reutiliza `GET /credits?search=` (sin cambios de backend), con debounce de 300 ms, escape de regex en el front (el backend compila el término con `new RegExp`), descarte de respuestas viejas y mensaje de "sin resultados" cuando la búsqueda no coincide. Al saldar, la lista se recarga conservando el filtro. Ticket: ADMIN-205.
+
 ### Changed
 - **Documentación de IA actualizada (ADMIN-204)** — `architecture.md` corrige `useAuth.tsx`, quita la carpeta `settings/` duplicada y documenta `layout/` y las convenciones de código (arrow + `types.ts` para componentes nuevos). `DEPLOYMENT_PIPELINE.md` registra que el auto-deploy de staging estaba deshabilitado y agrega verificar el deployment tras cada merge. `traps.md` agrega dos trampas nuevas (merge sin deploy, husky reformatea staged).
 
