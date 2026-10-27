@@ -1,7 +1,7 @@
 ---
 type: Architecture
 version: <sha-corto>
-validated: 2026-10-15
+validated: 2026-10-27
 update_when: when folder layout, layers, entrypoints, or critical flows change
 scope:
   - src
@@ -38,11 +38,14 @@ src/
 │   ├── settings/    # Global settings
 │   │   ├── ConfigPage.tsx          # Orquestador declarativo
 │   │   └── hooks/useSettingsConfig/ # Estado de settings (load/save/discard)
-│   ├── users/       # Users + admins
-│   └── settings/    # Global settings
+│   └── users/       # Users + admins
+├── layout/          # Shell autenticado
+│   ├── Layout.tsx   # Header + <main>; monta Sidebar
+│   └── Sidebar/     # Barra lateral plegable (index.tsx + types.ts)
+│                    #   Estado "plegada" en localStorage `sidebarCollapsed`
 ├── components/      # Shared presentational components
 ├── hooks/           # Shared logic hooks (state, effects)
-│   ├── useAuth.jsx  # Auth context (JWT, roles)
+│   ├── useAuth.tsx  # Auth context (JWT, roles)
 │   ├── useSchool/   # School context + schoolName con fallback chain
 │   │                #   (school.name → settings.labelBusinessName → 'Mi Negocio')
 │   ├── useProducts/      # Listado paginado server-side (debounce, filtros, sort)
@@ -53,6 +56,11 @@ src/
 ├── test/            # Test utilities + setup
 └── main.tsx         # App bootstrap
 ```
+
+## Convenciones de código
+- **Componentes nuevos**: `const` + arrow function, export nombrado (`export const X = () => {}`), en carpeta propia con `index.tsx` + `types.ts`. Las interfaces de props y tipos van en `types.ts`, nunca en el mismo archivo del componente.
+- **Código existente**: la mayoría de archivos aún usa `function` declarations. No reescribirlos solo por estilo; migrar cuando se toquen por otra razón.
+- **Comentarios**: solo cuando explican un porqué no obvio. No describir lo que el código ya dice.
 
 ## Entry Points
 - **Development**: `vite` (port 5174, proxy /api → localhost:3000)
