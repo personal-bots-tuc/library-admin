@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Barra lateral plegable (ADMIN-203)** — la barra lateral se contrae a una franja de íconos con botón de toggle; tooltips en cada ítem y preferencia persistida en `localStorage` (`sidebarCollapsed`). Sidebar dividido en subcomponentes.
 - **Categorías de producto con CRUD y gestión rápida (ADMIN-200)** — Soporte de categorías opcionales en productos, selector con creación rápida en modal de producto, modal de gestión de categorías en listado con creación y eliminación confirmada, tipos y hooks actualizados, documentación de contratos y POS actualizada.
 
 ### Fixed
