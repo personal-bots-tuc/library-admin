@@ -6,6 +6,7 @@ import { getApiErrorMessage, getApiFieldErrors } from '../../lib/apiError';
 import { createProduct, updateProduct } from '../../api/products';
 import { useCategories } from '../../hooks/useCategories';
 import { CategoryQuickCreate } from '../CategoryQuickCreate';
+import { FieldError } from './FieldError';
 import type { CreateProductForm, CreateProductModalProps, ProductType } from './types';
 
 const EMPTY_FORM: CreateProductForm = {
@@ -49,12 +50,7 @@ function ProfitInfo({ price, cost }: { price: number; cost?: number }) {
   );
 }
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-xs text-danger-500 mt-1">{message}</p>;
-}
-
-function mapToForm(data?: CreateProductModalProps['initialData']): CreateProductForm {
+const mapToForm = (data?: CreateProductModalProps['initialData']): CreateProductForm => {
   if (!data) return EMPTY_FORM;
   return {
     name: data.name,
@@ -66,7 +62,7 @@ function mapToForm(data?: CreateProductModalProps['initialData']): CreateProduct
     code: data.code ?? '',
     categoryId: data.categoryId ?? null,
   };
-}
+};
 
 export default function CreateProductModal({
   isOpen,
