@@ -58,15 +58,17 @@ scope:
 - `POST /sales/:id/credit-note` → `CreditNote`
 
 ### Cash Shifts
-- `GET /cash-shifts` → `CashShift[]` (filtros: dateRange, status, page)
-- `GET /cash-shifts/current` → `CashShift | null`
-- `GET /cash-shifts/:id` → `CashShift` (detalle con movimientos)
-- `POST /cash-shifts/open` → `CashShift`
-- `POST /cash-shifts/:id/close` → `CashShift`
+- `GET /cash-shifts` → `CashShiftListResult` (`items`, `total`, `page`, `limit`, `totalPages`; filtros: `page`, `limit` (1-100, default 20), `status`, `hasDifference`, `sellerId`, `fromDate`, `toDate`, `sortBy` (`openedAt|closedAt`), `sortOrder`). `hasDifference` no pasa por zod y, sin `status=closed`, devuelve también turnos abiertos (ver `traps.md`).
+- `GET /cash-shifts/active` → turno abierto actual o `null`
+- `GET /cash-shifts/summary/daily` → `DailySummary` (acepta `date`; el front no lo envía, usa hoy)
+- `GET /cash-shifts/:id` → `CashShift`
+- `GET /cash-shifts/:id/detail` → `CashShiftDetail` (ventas, movimientos y agregados del turno)
+- `POST /cash-shifts/:id/close` → `CashShiftDetail` (`closingAmount`, `note` obligatoria si hay diferencia)
+- `GET /cash-shifts/:id/movements` y `GET /cash-shifts/:id/movements/aggregated`
 
 ### Cash Movements
-- `GET /cash-movements` → `CashMovement[]` (filtros: shiftId, type, page)
-- `POST /cash-movements` → `CashMovement` (type: income/expense, amount, reason)
+- `GET /cash-movements` → `CashMovementListResult` (`page`, `limit`, `cashShiftId`, `type` (`in|out`), `category`, `sellerId`, `fromDate`, `toDate`, `sortBy`, `sortOrder`)
+- `DELETE /cash-movements/:id` (solo admin/superadmin desde la UI)
 
 ### Credits (Devoluciones/Deudas)
 - `GET /credits` → `Credit[]` (filtros: clientId, status, overdue, page)
