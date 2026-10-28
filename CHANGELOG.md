@@ -8,10 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Alta de clientes desde el panel (ADMIN-206)** — el modal "Nuevo Cliente" de `ClientsPage` ahora es un formulario (nombre completo, DNI y celular opcional) que reutiliza `POST /clients`. Valida como el backend, muestra el error del servidor (p. ej. DNI duplicado) sin cerrar el modal y recarga la lista al crear.
 - **Barra lateral plegable (ADMIN-203)** — la barra lateral se contrae a una franja de íconos con botón de toggle; tooltips en cada ítem y preferencia persistida en `localStorage` (`sidebarCollapsed`). Sidebar dividido en subcomponentes.
 - **Categorías de producto con CRUD y gestión rápida (ADMIN-200)** — Soporte de categorías opcionales en productos, selector con creación rápida en modal de producto, modal de gestión de categorías en listado con creación y eliminación confirmada, tipos y hooks actualizados, documentación de contratos y POS actualizada.
 
 ### Fixed
+- **Toasts no re-disparan efectos (ADMIN-206)** — `ToastProvider` memoriza el valor del contexto; antes, un error de carga en `ClientsPage` provocaba un bucle de peticiones. Los errores de carga de clientes ahora se muestran como toast en lugar de `console.error`.
 - **Crash IndexedDB tras login (ADMIN-112)** — la capa offline persistía en un object
   store por namespace (`rq-<ns>`), pero los object stores solo se crean en la PRIMERA
   apertura de la DB: el namespace `anon` (login) creaba la DB y todo namespace posterior

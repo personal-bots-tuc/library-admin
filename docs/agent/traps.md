@@ -118,3 +118,8 @@ segundo namespace con `NotFoundError: object store not found` en cada persistenc
 upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Evidencia**: `src/lib/persistence.ts`, regression test multi-namespace en
 `src/lib/persistence.test.ts`.
+
+## Valor de contexto sin memo re-dispara efectos que dependen de una función del contexto (2026-10-28)
+**Problema**: `ToastProvider` construía el objeto `value` en cada render, así que `error`/`success` cambiaban de identidad en cada render del provider. Un `useEffect` de carga que tenía `showError` como dependencia, al fallar mostraba un toast → el provider re-renderiza → nueva identidad → el efecto vuelve a pedir la lista → falla de nuevo → bucle de requests (`ClientsPage`).
+**Regla**: los valores de contexto que exponen funciones se memorizan (`useMemo` sobre `show`, que es `useCallback` estable). Y un efecto que dispara una petición no debe depender de funciones que disparen toasts sin estar memorizadas.
+**Evidencia**: `src/components/Toast/useToast.tsx`, test "no debería volver a pedir la lista cuando la carga falla" en `src/pages/clients/ClientsPage.test.tsx`.

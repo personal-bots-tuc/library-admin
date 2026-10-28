@@ -1,5 +1,5 @@
-import api from "../client";
-import type { Client, ClientListResponse } from "./types";
+import api from '../client';
+import type { Client, ClientListResponse, CreateClientPayload } from './types';
 
 export interface ListClientsParams {
   page?: number;
@@ -7,11 +7,11 @@ export interface ListClientsParams {
   search?: string;
   hasBalance?: boolean;
   sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  sortOrder?: 'asc' | 'desc';
 }
 
 export async function listClients(params: ListClientsParams): Promise<ClientListResponse> {
-  const { data } = await api.get("/clients", { params });
+  const { data } = await api.get('/clients', { params });
   return data;
 }
 
@@ -20,8 +20,8 @@ export async function getClient(id: string): Promise<Client> {
   return data;
 }
 
-export async function createClient(payload: Partial<Client>): Promise<Client> {
-  const { data } = await api.post("/clients", payload);
+export async function createClient(payload: CreateClientPayload): Promise<Client> {
+  const { data } = await api.post('/clients', payload);
   return data;
 }
 
@@ -30,4 +30,4 @@ export async function updateClient(id: string, payload: Partial<Client>): Promis
   return data;
 }
 
-export type * from "./types";
+export type * from './types';

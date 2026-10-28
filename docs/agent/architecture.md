@@ -30,7 +30,7 @@ src/
 │   │       ├── hooks/usePriceLabelsSelection.ts
 │   │       ├── utils/printLabels.ts # window.open + inline CSS (patrón printTicket)
 │   │       └── types.ts
-│   ├── clients/     # Clients CRUD
+│   ├── clients/     # Clients listado + alta (modal CreateClientModal en components/)
 │   ├── sales/       # Sales + credit notes
 │   ├── credits/     # Credits/debts management
 │   ├── cash-register/ # Cash shifts + movements
