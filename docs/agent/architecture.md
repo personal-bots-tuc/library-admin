@@ -22,6 +22,7 @@ src/
 │   │   ├── ProductsLayout.tsx      # Tabs "Listado" | "Preciero" + <Outlet>
 │   │   ├── ProductsListPage.tsx    # Listado paginado (useProducts) + botón imprimir (modal columnas)
 │   │   ├── components/
+│   │   │   ├── ProductsToolbar/        # Barra de filtros y acciones (wrap responsive; index.tsx + types.ts)
 │   │   │   └── PrintReportModal/       # Selector de columnas (default sin costo/margen)
 │   │   ├── utils/printProductsReport.ts # Reporte A4 portrait (fetch all + registry de columnas + HTML print)
 │   │   └── PriceLabelsPage/        # Preciero: etiquetas A4 10/20/30

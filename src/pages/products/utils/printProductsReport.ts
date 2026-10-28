@@ -82,6 +82,7 @@ export interface ProductsReportFilters {
   typeFilter: 'all' | 'product' | 'service';
   lowStockOnly: boolean;
   sort: string;
+  categoryId?: string | null;
 }
 
 export interface ProductsReportOptions {
@@ -105,6 +106,7 @@ export async function fetchAllProducts(
   if (filters.search.trim()) base.search = filters.search.trim();
   if (filters.typeFilter !== 'all') base.type = filters.typeFilter;
   if (filters.lowStockOnly) base.lowStock = true;
+  if (filters.categoryId) base.categoryId = filters.categoryId;
 
   const items: Product[] = [];
   let page = 1;

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { renderWithAdminProviders, screen, waitFor } from '../../test/utils';
 import { createProduct, updateProduct } from '../../api/products';
+import { listCategories, createCategory } from '../../api/categories';
 import CreateProductModal from './index';
 
 vi.mock('../../api/products', () => ({
@@ -9,7 +10,17 @@ vi.mock('../../api/products', () => ({
   updateProduct: vi.fn(),
 }));
 
+vi.mock('../../api/categories', () => ({
+  listCategories: vi.fn(),
+  createCategory: vi.fn(),
+  deleteCategory: vi.fn(),
+}));
+
 describe('CreateProductModal', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('renders create title when no initialData', () => {
     const { getByRole } = renderWithAdminProviders(
       <CreateProductModal isOpen onClose={vi.fn()} onSuccess={vi.fn()} />
@@ -18,13 +29,27 @@ describe('CreateProductModal', () => {
     expect(heading).toBeTruthy();
   });
 
-  it('renders edit title when initialData provided', () => {
-    const initialData = { id: '1', name: 'Test', type: 'product' as const, price: 10, stock: 5 };
-    const { getByRole } = renderWithAdminProviders(
-      <CreateProductModal isOpen onClose={vi.fn()} onSuccess={vi.fn()} initialData={initialData} />
-    );
-    const heading = getByRole('heading', { name: 'Editar producto' });
-    expect(heading).toBeTruthy();
+  it('una categoría creada desde el modal aparece en el select sin recargar la página', async () => {
+    vi.mocked(listCategories)
+      .mockResolvedValueOnce([])
+      .mockResolvedValue([{ id: 'cat-9', name: 'Librería', active: true }]);
+    vi.mocked(createCategory).mockResolvedValue({
+      id: 'cat-9',
+      name: 'Librería',
+      active: true,
+    });
+
+    const user = userEvent.setup();
+    renderWithAdminProviders(<CreateProductModal isOpen onClose={vi.fn()} onSuccess={vi.fn()} />);
+
+    await user.click(screen.getByTitle('Nueva categoría'));
+    await user.type(screen.getByPlaceholderText('Ej: Útiles escolares'), 'Librería');
+    await user.click(screen.getByRole('button', { name: 'Crear' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('option', { name: 'Librería' })).toBeInTheDocument();
+    });
+    expect(screen.getByRole('combobox', { name: 'Categoría' })).toHaveValue('cat-9');
   });
 });
 

@@ -1,13 +1,16 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Modal from '../Modal';
 import { useCategories } from '../../hooks/useCategories';
 import { CategoryQuickCreate } from '../CategoryQuickCreate';
 import { deleteCategory } from '../../api/categories';
 import { useToast } from '../Toast/useToast';
+import { getApiErrorMessage } from '../../lib/apiError';
 import type { CategoriesManagerModalProps } from './types';
 
 export default function CategoriesManagerModal({ isOpen, onClose }: CategoriesManagerModalProps) {
-  const { categories, refetch } = useCategories();
+  const { categories } = useCategories();
+  const queryClient = useQueryClient();
   const { success, error: showError } = useToast();
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -16,9 +19,9 @@ export default function CategoriesManagerModal({ isOpen, onClose }: CategoriesMa
     try {
       await deleteCategory(id);
       success('Categoría eliminada');
-      await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['categories'] });
     } catch (e: unknown) {
-      showError(e instanceof Error ? e.message : 'Error al eliminar');
+      showError(getApiErrorMessage(e, 'Error al eliminar'));
     } finally {
       setDeletingId(null);
     }
@@ -71,10 +74,7 @@ export default function CategoriesManagerModal({ isOpen, onClose }: CategoriesMa
       <CategoryQuickCreate
         isOpen={quickCreateOpen}
         onClose={() => setQuickCreateOpen(false)}
-        onCreated={() => {
-          setQuickCreateOpen(false);
-          refetch();
-        }}
+        onCreated={() => setQuickCreateOpen(false)}
       />
     </>
   );

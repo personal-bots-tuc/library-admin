@@ -166,3 +166,12 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Problema**: el backend valida `categoryId` como `z.string().optional()`: acepta la clave ausente, pero rechaza `null` con `400 VALIDATION_ERROR` (`details: {"body.categoryId": [...]}`). El estado inicial del form de producto tenía `categoryId: null`, así que crear un producto sin elegir categoría fallaba, y el toast mostraba el mensaje genérico de axios.
 **Regla**: al enviar, omitir `categoryId` cuando no hay categoría (`categoryId || undefined`). Los errores de validación se muestran por campo leyendo `response.data.details` (`getApiFieldErrors` en `src/lib/apiError.ts`), no solo `message`.
 **Evidencia**: `src/components/CreateProductModal/index.tsx`, `src/components/CreateProductModal/CreateProductModal.test.tsx`.
+
+## Caché de categorías/productos: invalidar tras mutar (2026-10-28)
+**Regla**: crear/editar/borrar categoría invalida `['categories']`; crear/editar/borrar producto invalida `['products']`. No hay `useMutation`: usar `useQueryClient().invalidateQueries`.
+**Evidencia**: `src/components/CategoryQuickCreate/index.tsx`, `src/pages/products/ProductsListPage.tsx` (`handleProductSaved`).
+
+## `PATCH /products/:id` no puede quitar la categoría (abierto, 2026-10-28)
+**Problema**: el form omite `categoryId` cuando no hay categoría (el backend rechaza `null`), y `product.update` hace merge parcial: la categoría anterior queda.
+**Regla**: no desasignar hasta que el backend acepte `categoryId: null` en PATCH.
+**Evidencia**: `api/pkg/domain/inventory/product-cases.ts` (`UpdateProduct`).

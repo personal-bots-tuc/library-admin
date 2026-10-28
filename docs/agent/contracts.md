@@ -41,7 +41,7 @@ scope:
 - `GET /categories` → `Category[]` (filtros: activeOnly)
 - `GET /categories/:id` → `Category`
 - `POST /categories` → `Category` (body: `name`, `description?`, `order?`)
-- `PUT /categories/:id` → `Category`
+- `PATCH /categories/:id` → `Category` (el admin todavía no lo consume: no hay edición de categorías en el front)
 - `DELETE /categories/:id` → void
 - `Category` shape: `{ id, name, description?, active, order?, createdAt, updatedAt }`
 
