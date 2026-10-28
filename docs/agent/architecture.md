@@ -44,6 +44,8 @@ src/
 │   └── Sidebar/     # Barra lateral plegable (index.tsx + types.ts)
 │                    #   Estado "plegada" en localStorage `sidebarCollapsed`
 ├── components/      # Shared presentational components
+│   └── CreateProductModal/  # Alta/edición de producto (index.tsx + types.ts)
+│       └── FieldError/      # Error de validación bajo un campo (arrow + types.ts)
 ├── hooks/           # Shared logic hooks (state, effects)
 │   ├── useAuth.tsx  # Auth context (JWT, roles)
 │   ├── useSchool/   # School context + schoolName con fallback chain
