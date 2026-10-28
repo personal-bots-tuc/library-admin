@@ -9,6 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Alta de clientes desde el panel (ADMIN-206)** — el modal "Nuevo Cliente" de `ClientsPage` ahora es un formulario (nombre completo, DNI y celular opcional) que reutiliza `POST /clients`. Valida como el backend, muestra el error del servidor (p. ej. DNI duplicado) sin cerrar el modal y recarga la lista al crear.
+- **Buscador de deudores en Cuentas corrientes** — la card "Detalle de deudores" suma un buscador por nombre, apellido o DNI. Reutiliza `GET /credits?search=` (sin cambios de backend), con debounce de 300 ms, escape de regex en el front (el backend compila el término con `new RegExp`), descarte de respuestas viejas y mensaje de "sin resultados" cuando la búsqueda no coincide. Al saldar, la lista se recarga conservando el filtro. Ticket: ADMIN-205.
+
+### Changed
+- **Documentación de IA actualizada (ADMIN-204)** — `architecture.md` corrige `useAuth.tsx`, quita la carpeta `settings/` duplicada y documenta `layout/` y las convenciones de código (arrow + `types.ts` para componentes nuevos). `DEPLOYMENT_PIPELINE.md` registra que el auto-deploy de staging estaba deshabilitado y agrega verificar el deployment tras cada merge. `traps.md` agrega dos trampas nuevas (merge sin deploy, husky reformatea staged).
+
+### Added
 - **Barra lateral plegable (ADMIN-203)** — la barra lateral se contrae a una franja de íconos con botón de toggle; tooltips en cada ítem y preferencia persistida en `localStorage` (`sidebarCollapsed`). Sidebar dividido en subcomponentes.
 - **Categorías de producto con CRUD y gestión rápida (ADMIN-200)** — Soporte de categorías opcionales en productos, selector con creación rápida en modal de producto, modal de gestión de categorías en listado con creación y eliminación confirmada, tipos y hooks actualizados, documentación de contratos y POS actualizada.
 

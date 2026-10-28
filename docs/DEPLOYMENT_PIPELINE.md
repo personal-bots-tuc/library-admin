@@ -2,7 +2,7 @@
 type: DeploymentPipeline
 app: librarysystem-admin
 version: 9fae4ea
-validated: 2026-10-08
+validated: 2026-10-27
 update_when: cuando cambie el mecanismo de deploy, las URLs, los gates o el flujo de promoción de ESTE repo
 ---
 
@@ -21,6 +21,7 @@ update_when: cuando cambie el mecanismo de deploy, las URLs, los gates o el fluj
 1. Actualizar guías `docs/agent/*` afectadas (respetando `update_when` y `scope` de cada frontmatter).
 2. Actualizar `version`/`validated` de las guías tocadas.
 3. Entrada en `CHANGELOG.md` → `[Unreleased]` con ticket + PR enlazados.
+4. Tras el merge a `develop`, confirmar que Railway creó un deployment nuevo en staging. Un merge sin deployment nuevo no cuenta como entregado (ver `docs/agent/traps.md`).
 
 ## Flujo obligatorio
 
@@ -36,10 +37,12 @@ feature/[ADMIN-XXX]-desc ─PR+CI verde─► develop ─auto-deploy─► STAGI
 
 | Ambiente | Mecanismo | Rama | URL |
 |----------|-----------|------|-----|
-| Staging | Railway **auto-deploy** (watcher GitHub **configurado y verificado 2026-10-08**) | `develop` | https://library-admin-staging.up.railway.app |
-| Production | Railway **auto-deploy** (watcher `main` **configurado y verificado 2026-10-08**) | `main` | https://library-admin-prod.up.railway.app |
+| Staging | Railway **auto-deploy** (watcher GitHub, rama `develop`) | `develop` | https://library-admin-staging.up.railway.app |
+| Production | Railway **auto-deploy** (watcher GitHub, rama `main`) | `main` | https://library-admin-prod.up.railway.app |
 
-> **Watchers operativos:** branch watchers configurados en Railway Dashboard (staging→`develop`, production→`main`). Validado con push trivial a `develop` → auto-deploy staging confirmado.
+> **Estado del watcher de staging (2026-10-27):** el auto-deploy estaba **deshabilitado**. El merge de ADMIN-203 (#28) a `develop` no generó deployment en staging (último deployment: 2026-10-15). Reactivar en Railway Dashboard → proyecto `welcoming-abundance` → entorno `staging` → servicio `library-admin` → Source: rama `develop`, auto-deploy activo. Verificar con un merge real: debe aparecer un deployment nuevo en staging. Hasta confirmarlo, el deploy manual es la excepción documentada en `docs/agent/traps.md` (link explícito a `staging`).
+>
+> **Production:** el estado de su watcher (`main`) no se re-verificó en esta fecha. Confirmarlo antes del próximo release.
 
 Runtime: nginx non-root + `envsubst` en entrypoint genera `config.js` desde `config.template.js` con `VITE_API_BASE_URL`, `VITE_APP_NAME`, `VITE_POS_BASE_URL` (variables Railway por environment).
 

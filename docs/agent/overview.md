@@ -1,7 +1,7 @@
 ---
 type: Overview
 version: <sha-corto>
-validated: 2026-10-15
+validated: 2026-10-27
 update_when: when purpose, capabilities, or ownership change
 scope:
   - src/pages
@@ -26,6 +26,7 @@ Panel de administración para gestión completa del sistema de biblioteca escola
 - **Usuarios**: CRUD, roles, permisos, admins
 - **Bots**: Configuración, métricas, entrenamiento, órdenes
 - **Configuración**: Parámetros globales del sistema
+- **Navegación**: Barra lateral plegable a solo íconos; la preferencia se guarda en el navegador (`sidebarCollapsed`)
 
 ## Users
 - **Administradores**: Acceso completo (rol: admin)
