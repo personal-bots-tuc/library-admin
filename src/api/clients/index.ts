@@ -1,12 +1,19 @@
 import api from '../client';
-import type { Client, ClientListResponse, CreateClientPayload } from './types';
+import type {
+  Client,
+  ClientListResponse,
+  ClientSortField,
+  CreateClientPayload,
+  UpdateClientPayload,
+} from './types';
 
 export interface ListClientsParams {
   page?: number;
   limit?: number;
   search?: string;
-  hasBalance?: boolean;
-  sortBy?: string;
+  hasDebt?: boolean;
+  active?: boolean;
+  sortBy?: ClientSortField;
   sortOrder?: 'asc' | 'desc';
 }
 
@@ -25,7 +32,7 @@ export async function createClient(payload: CreateClientPayload): Promise<Client
   return data;
 }
 
-export async function updateClient(id: string, payload: Partial<Client>): Promise<Client> {
+export async function updateClient(id: string, payload: UpdateClientPayload): Promise<Client> {
   const { data } = await api.patch(`/clients/${id}`, payload);
   return data;
 }

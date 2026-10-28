@@ -1,26 +1,34 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import Modal from '../Modal';
 import { useToast } from '../Toast/useToast';
-import { createClient, type CreateClientPayload } from '../../api/clients';
-import type { CreateClientModalProps } from './types';
+import {
+  createClient,
+  updateClient,
+  type Client,
+  type CreateClientPayload,
+} from '../../api/clients';
+import { getApiErrorMessage } from '../../lib/apiError';
+import type { ClientFormModalProps } from './types';
 
 const FULL_NAME_MIN = 2;
 const FULL_NAME_MAX = 120;
 const DNI_MAX = 20;
 const PHONE_MAX = 30;
 
-const EMPTY_FORM = { fullName: '', dni: '', phone: '' };
+type FormValues = { fullName: string; dni: string; phone: string };
+
+const EMPTY_FORM: FormValues = { fullName: '', dni: '', phone: '' };
+
+const formFromClient = (client?: Client): FormValues =>
+  client ? { fullName: client.fullName, dni: client.dni, phone: client.phone ?? '' } : EMPTY_FORM;
 
 const LABEL_CLASS = 'text-sm font-medium text-neutral-700 block mb-1';
 const INPUT_CLASS =
   'w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none';
 
-const getErrorMessage = (err: unknown) =>
-  (err as { response?: { data?: { message?: string } } } | null)?.response?.data?.message ??
-  'Error al crear el cliente';
-
-export const CreateClientModal = ({ isOpen, onClose, onCreated }: CreateClientModalProps) => {
-  const [form, setForm] = useState(EMPTY_FORM);
+export const ClientFormModal = ({ isOpen, onClose, onSaved, client }: ClientFormModalProps) => {
+  const isEditing = client !== undefined;
+  const [form, setForm] = useState<FormValues>(() => formFromClient(client));
   const [submitting, setSubmitting] = useState(false);
   const { success, error: showError } = useToast();
 
@@ -28,37 +36,55 @@ export const CreateClientModal = ({ isOpen, onClose, onCreated }: CreateClientMo
   const dni = form.dni.trim();
   const isValid = fullName.length >= FULL_NAME_MIN && dni.length > 0;
 
-  const updateField = (field: keyof typeof EMPTY_FORM) => (e: ChangeEvent<HTMLInputElement>) =>
+  const updateField = (field: keyof FormValues) => (e: ChangeEvent<HTMLInputElement>) =>
     setForm(prev => ({ ...prev, [field]: e.target.value }));
 
   const handleClose = () => {
     if (submitting) return;
-    setForm(EMPTY_FORM);
+    setForm(formFromClient(client));
     onClose();
+  };
+
+  const save = async () => {
+    const phone = form.phone.trim();
+    if (client) {
+      return updateClient(client.id, { fullName, dni, phone });
+    }
+    const payload: CreateClientPayload = { fullName, dni, ...(phone && { phone }) };
+    return createClient(payload);
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!isValid || submitting) return;
 
-    const phone = form.phone.trim();
-    const payload: CreateClientPayload = { fullName, dni, ...(phone && { phone }) };
-
     setSubmitting(true);
     try {
-      const client = await createClient(payload);
-      success(`Cliente "${client.fullName}" creado`);
-      onCreated(client);
+      const saved = await save();
+      success(
+        isEditing ? `Cliente "${saved.fullName}" actualizado` : `Cliente "${saved.fullName}" creado`
+      );
+      onSaved(saved);
       handleClose();
     } catch (err) {
-      showError(getErrorMessage(err));
+      showError(
+        getApiErrorMessage(
+          err,
+          isEditing ? 'Error al actualizar el cliente' : 'Error al crear el cliente'
+        )
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Nuevo Cliente" size="md">
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title={isEditing ? 'Editar cliente' : 'Nuevo Cliente'}
+      size="md"
+    >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label htmlFor="client-full-name" className={LABEL_CLASS}>
@@ -112,7 +138,13 @@ export const CreateClientModal = ({ isOpen, onClose, onCreated }: CreateClientMo
             disabled={!isValid || submitting}
             className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm disabled:opacity-60"
           >
-            {submitting ? 'Creando...' : 'Crear'}
+            {submitting
+              ? isEditing
+                ? 'Guardando...'
+                : 'Creando...'
+              : isEditing
+                ? 'Guardar'
+                : 'Crear'}
           </button>
         </div>
       </form>
