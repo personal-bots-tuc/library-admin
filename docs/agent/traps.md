@@ -119,6 +119,11 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Evidencia**: `src/lib/persistence.ts`, regression test multi-namespace en
 `src/lib/persistence.test.ts`.
 
+## Valor de contexto sin memo re-dispara efectos que dependen de una función del contexto (2026-10-28)
+**Problema**: `ToastProvider` construía el objeto `value` en cada render, así que `error`/`success` cambiaban de identidad en cada render del provider. Un `useEffect` de carga que tenía `showError` como dependencia, al fallar mostraba un toast → el provider re-renderiza → nueva identidad → el efecto vuelve a pedir la lista → falla de nuevo → bucle de requests (`ClientsPage`).
+**Regla**: los valores de contexto que exponen funciones se memorizan (`useMemo` sobre `show`, que es `useCallback` estable). Y un efecto que dispara una petición no debe depender de funciones que disparen toasts sin estar memorizadas.
+**Evidencia**: `src/components/Toast/useToast.tsx`, test "no debería volver a pedir la lista cuando la carga falla" en `src/pages/clients/ClientsPage.test.tsx`.
+
 ## Merge a `develop` no implica deploy a staging (2026-10-27)
 **Problema**: el PR #28 (ADMIN-203) se mergeó a `develop` y staging no se desplegó. El auto-deploy de Railway estaba deshabilitado; el último deployment de staging era del 2026-10-15.
 **Regla**: un merge no está entregado hasta que aparece un deployment nuevo en Railway para el ambiente correspondiente. Verificar con `railway deployment list -e staging` tras cada merge a `develop`.
@@ -134,3 +139,13 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Problema**: `ListCreditAccounts` (`api/internal/service/credits/list-credit-accounts.ts`) hace `new RegExp(input.search, 'i')`. Un término con `(`, `+`, `[` o `\` lanza `SyntaxError` (500) o cambia el significado de la búsqueda.
 **Solución**: el front escapa el término antes de enviarlo (`src/pages/credits/utils/debtorSearch.ts` → `toDebtorSearchTerm`). Si se consume este endpoint desde otro lugar, replicar el escape o arreglar el backend (escapar en el service).
 **Evidencia**: `src/pages/credits/utils/debtorSearch.test.ts`, `src/pages/credits/CreditsPage.test.tsx` ("envía el término escapado").
+
+## `useAuth().isAdmin` es false para superadmin (2026-10-28)
+**Problema**: `isAdmin` se calcula como `user?.role === 'admin'`, así que un superadmin no lo cumple. Gatear una acción con `isAdmin` oculta la acción a superadmin, aunque el backend (`requireAdmin`) la permita.
+**Regla**: para permisos de administración usar `isAdmin || isSuperAdmin`.
+**Evidencia**: `src/hooks/useAuth.tsx`, `src/pages/clients/ClientsPage.tsx`.
+
+## `DELETE /clients/:id` es borrado definitivo y `PATCH` no protege el cliente por defecto (2026-10-28)
+**Problema**: el backend hace `findOneAndDelete` sin revisar deuda ni ventas ni créditos asociados (deja huérfanos). Borrar el cliente por defecto ("Consumidor Final") lanza un `Error` plano y responde 500 en vez de un error de dominio. `PATCH` tampoco protege `isDefault`: renombrarlo rompe `findDefault`.
+**Regla**: el admin "elimina" con `PATCH active: false` (baja lógica) y bloquea las acciones sobre el cliente por defecto en la UI. No usar `DELETE` desde el front hasta que el backend valide deuda y ventas.
+**Evidencia**: `api/internal/service/customers/client-cases.ts` (`DeleteClient`, `UpdateClient`), `api/internal/handler/clients/clients.routes.ts`.

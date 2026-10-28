@@ -1,17 +1,24 @@
-import api from "../client";
-import type { Client, ClientListResponse } from "./types";
+import api from '../client';
+import type {
+  Client,
+  ClientListResponse,
+  ClientSortField,
+  CreateClientPayload,
+  UpdateClientPayload,
+} from './types';
 
 export interface ListClientsParams {
   page?: number;
   limit?: number;
   search?: string;
-  hasBalance?: boolean;
-  sortBy?: string;
-  sortOrder?: "asc" | "desc";
+  hasDebt?: boolean;
+  active?: boolean;
+  sortBy?: ClientSortField;
+  sortOrder?: 'asc' | 'desc';
 }
 
 export async function listClients(params: ListClientsParams): Promise<ClientListResponse> {
-  const { data } = await api.get("/clients", { params });
+  const { data } = await api.get('/clients', { params });
   return data;
 }
 
@@ -20,14 +27,14 @@ export async function getClient(id: string): Promise<Client> {
   return data;
 }
 
-export async function createClient(payload: Partial<Client>): Promise<Client> {
-  const { data } = await api.post("/clients", payload);
+export async function createClient(payload: CreateClientPayload): Promise<Client> {
+  const { data } = await api.post('/clients', payload);
   return data;
 }
 
-export async function updateClient(id: string, payload: Partial<Client>): Promise<Client> {
+export async function updateClient(id: string, payload: UpdateClientPayload): Promise<Client> {
   const { data } = await api.patch(`/clients/${id}`, payload);
   return data;
 }
 
-export type * from "./types";
+export type * from './types';

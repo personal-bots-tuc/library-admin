@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Clientes: paginación del servidor, editar y desactivar (ADMIN-207)** — el listado usa `page`/`limit` y el `total` del backend (antes solo llegaban 10 clientes). Cada fila (admin y superadmin) permite editar nombre, DNI y celular (`PATCH`), y desactivar o reactivar el cliente con `active` (baja lógica, con confirmación). El cliente "Consumidor Final" no tiene acciones. Filtro de deudores con `hasDebt` y búsqueda con debounce de 300 ms.
+- **Alta de clientes desde el panel (ADMIN-206)** — el modal "Nuevo Cliente" de `ClientsPage` ahora es un formulario (nombre completo, DNI y celular opcional) que reutiliza `POST /clients`. Valida como el backend, muestra el error del servidor (p. ej. DNI duplicado) sin cerrar el modal y recarga la lista al crear.
 - **Buscador de deudores en Cuentas corrientes** — la card "Detalle de deudores" suma un buscador por nombre, apellido o DNI. Reutiliza `GET /credits?search=` (sin cambios de backend), con debounce de 300 ms, escape de regex en el front (el backend compila el término con `new RegExp`), descarte de respuestas viejas y mensaje de "sin resultados" cuando la búsqueda no coincide. Al saldar, la lista se recarga conservando el filtro. Ticket: ADMIN-205.
 
 ### Changed
@@ -18,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Categorías de producto con CRUD y gestión rápida (ADMIN-200)** — Soporte de categorías opcionales en productos, selector con creación rápida en modal de producto, modal de gestión de categorías en listado con creación y eliminación confirmada, tipos y hooks actualizados, documentación de contratos y POS actualizada.
 
 ### Fixed
+- **Columna Deuda invertida (ADMIN-207)** — en clientes, deuda es `balance > 0`; antes se marcaba "Pendiente" con saldo negativo.
+- **Toasts no re-disparan efectos (ADMIN-206)** — `ToastProvider` memoriza el valor del contexto; antes, un error de carga en `ClientsPage` provocaba un bucle de peticiones. Los errores de carga de clientes ahora se muestran como toast en lugar de `console.error`.
 - **Crash IndexedDB tras login (ADMIN-112)** — la capa offline persistía en un object
   store por namespace (`rq-<ns>`), pero los object stores solo se crean en la PRIMERA
   apertura de la DB: el namespace `anon` (login) creaba la DB y todo namespace posterior

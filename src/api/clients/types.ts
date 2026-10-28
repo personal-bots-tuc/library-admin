@@ -10,6 +10,16 @@ export interface Client {
   updatedAt: string;
 }
 
+export interface CreateClientPayload {
+  fullName: string;
+  dni: string;
+  phone?: string;
+}
+
+export type UpdateClientPayload = Partial<Pick<Client, 'fullName' | 'phone' | 'dni' | 'active'>>;
+
+export type ClientSortField = 'fullName' | 'dni' | 'balance' | 'createdAt';
+
 export interface ClientListResponse {
   items: Client[];
   total: number;
