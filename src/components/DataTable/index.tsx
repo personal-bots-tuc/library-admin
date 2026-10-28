@@ -1,23 +1,36 @@
-import React, { useState, useMemo } from 'react';
-import type { DataTableProps } from './types';
+import { useState, type ReactNode } from 'react';
+import type { ColumnDef, DataTableProps } from './types';
+import { PaginationFooter } from './PaginationFooter';
 
 export type { ColumnDef } from './types';
+
+const renderCell = <T,>(col: ColumnDef<T>, item: T): ReactNode => {
+  if (col.cell) return col.cell(item);
+  if (col.accessorKey) return item[col.accessorKey] as ReactNode;
+  return null;
+};
 
 export function DataTable<T>({
   data,
   columns,
   keyExtractor,
   pageSize = 10,
-  emptyMessage = "No hay resultados",
+  emptyMessage = 'No hay resultados',
+  pagination,
 }: DataTableProps<T>) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [localPage, setLocalPage] = useState(1);
+  const rows = data ?? [];
 
-  const safeData = data || [];
-  const totalPages = Math.ceil(safeData.length / pageSize) || 1;
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return safeData.slice(start, start + pageSize);
-  }, [safeData, currentPage, pageSize]);
+  const paging = pagination ?? {
+    page: localPage,
+    pageSize,
+    total: rows.length,
+    onPageChange: setLocalPage,
+  };
+  const visibleRows = pagination
+    ? rows
+    : rows.slice((paging.page - 1) * paging.pageSize, paging.page * paging.pageSize);
+  const totalPages = Math.ceil(paging.total / paging.pageSize) || 1;
 
   return (
     <div className="w-full flex flex-col bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
@@ -26,25 +39,28 @@ export function DataTable<T>({
           <thead className="text-xs uppercase text-neutral-500 bg-neutral-50 border-b border-neutral-200">
             <tr>
               {columns.map((col, idx) => (
-                <th key={idx} className={`px-6 py-4 font-semibold tracking-wider ${col.className || ''}`}>
+                <th
+                  key={idx}
+                  className={`px-6 py-4 font-semibold tracking-wider ${col.className ?? ''}`}
+                >
                   {col.header}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {paginatedData.length === 0 ? (
+            {visibleRows.length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-12 text-center text-neutral-400">
                   {emptyMessage}
                 </td>
               </tr>
             ) : (
-              paginatedData.map((item) => (
+              visibleRows.map(item => (
                 <tr key={keyExtractor(item)} className="hover:bg-neutral-50/50 transition-colors">
                   {columns.map((col, idx) => (
-                    <td key={idx} className={`px-6 py-4 align-middle ${col.className || ''}`}>
-                      {col.cell ? col.cell(item) : col.accessorKey ? (item[col.accessorKey] as React.ReactNode) : null}
+                    <td key={idx} className={`px-6 py-4 align-middle ${col.className ?? ''}`}>
+                      {renderCell(col, item)}
                     </td>
                   ))}
                 </tr>
@@ -55,30 +71,13 @@ export function DataTable<T>({
       </div>
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between px-6 py-4 border-t border-neutral-200 bg-neutral-50/50">
-          <span className="text-sm text-neutral-500">
-            Mostrando {((currentPage - 1) * pageSize) + 1} a {Math.min(currentPage * pageSize, safeData.length)} de {safeData.length}
-          </span>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 text-sm bg-white border border-neutral-300 rounded-md disabled:opacity-50 hover:bg-neutral-50 transition-colors"
-            >
-              Anterior
-            </button>
-            <span className="text-sm font-medium text-neutral-700">
-              {currentPage} / {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm bg-white border border-neutral-300 rounded-md disabled:opacity-50 hover:bg-neutral-50 transition-colors"
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
+        <PaginationFooter
+          page={paging.page}
+          pageSize={paging.pageSize}
+          total={paging.total}
+          totalPages={totalPages}
+          onPageChange={paging.onPageChange}
+        />
       )}
     </div>
   );
