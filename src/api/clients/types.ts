@@ -10,6 +10,12 @@ export interface Client {
   updatedAt: string;
 }
 
+export interface CreateClientPayload {
+  fullName: string;
+  dni: string;
+  phone?: string;
+}
+
 export interface ClientListResponse {
   items: Client[];
   total: number;

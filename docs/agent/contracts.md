@@ -45,10 +45,10 @@ scope:
 - `Category` shape: `{ id, name, description?, active, order?, createdAt, updatedAt }`
 
 ### Clients
-- `GET /clients` → `Client[]` (search, page, limit)
+- `GET /clients` → `ClientListResponse` `{ items: Client[], total, page, limit, totalPages }` (search, page, limit, hasBalance)
 - `GET /clients/:id` → `Client`
-- `POST /clients` → `Client`
-- `PUT /clients/:id` → `Client`
+- `POST /clients` → `Client` (body `{ fullName, dni, phone? }`; 409 si el DNI ya existe en la escuela)
+- `PATCH /clients/:id` → `Client`
 - `DELETE /clients/:id` → void
 
 ### Sales
