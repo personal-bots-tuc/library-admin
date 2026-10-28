@@ -139,3 +139,13 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Problema**: `ListCreditAccounts` (`api/internal/service/credits/list-credit-accounts.ts`) hace `new RegExp(input.search, 'i')`. Un término con `(`, `+`, `[` o `\` lanza `SyntaxError` (500) o cambia el significado de la búsqueda.
 **Solución**: el front escapa el término antes de enviarlo (`src/pages/credits/utils/debtorSearch.ts` → `toDebtorSearchTerm`). Si se consume este endpoint desde otro lugar, replicar el escape o arreglar el backend (escapar en el service).
 **Evidencia**: `src/pages/credits/utils/debtorSearch.test.ts`, `src/pages/credits/CreditsPage.test.tsx` ("envía el término escapado").
+
+## `useAuth().isAdmin` es false para superadmin (2026-10-28)
+**Problema**: `isAdmin` se calcula como `user?.role === 'admin'`, así que un superadmin no lo cumple. Gatear una acción con `isAdmin` oculta la acción a superadmin, aunque el backend (`requireAdmin`) la permita.
+**Regla**: para permisos de administración usar `isAdmin || isSuperAdmin`.
+**Evidencia**: `src/hooks/useAuth.tsx`, `src/pages/clients/ClientsPage.tsx`.
+
+## `DELETE /clients/:id` es borrado definitivo y `PATCH` no protege el cliente por defecto (2026-10-28)
+**Problema**: el backend hace `findOneAndDelete` sin revisar deuda ni ventas ni créditos asociados (deja huérfanos). Borrar el cliente por defecto ("Consumidor Final") lanza un `Error` plano y responde 500 en vez de un error de dominio. `PATCH` tampoco protege `isDefault`: renombrarlo rompe `findDefault`.
+**Regla**: el admin "elimina" con `PATCH active: false` (baja lógica) y bloquea las acciones sobre el cliente por defecto en la UI. No usar `DELETE` desde el front hasta que el backend valide deuda y ventas.
+**Evidencia**: `api/internal/service/customers/client-cases.ts` (`DeleteClient`, `UpdateClient`), `api/internal/handler/clients/clients.routes.ts`.

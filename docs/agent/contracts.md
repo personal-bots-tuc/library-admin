@@ -45,11 +45,11 @@ scope:
 - `Category` shape: `{ id, name, description?, active, order?, createdAt, updatedAt }`
 
 ### Clients
-- `GET /clients` → `ClientListResponse` `{ items: Client[], total, page, limit, totalPages }` (search, page, limit, hasBalance)
+- `GET /clients` → `ClientListResponse` `{ items: Client[], total, page, limit, totalPages }` (search, page, limit, hasDebt, active, sortBy: fullName|dni|balance|createdAt, sortOrder). `hasBalance` no existe en el backend: se ignora en silencio.
 - `GET /clients/:id` → `Client`
 - `POST /clients` → `Client` (body `{ fullName, dni, phone? }`; 409 si el DNI ya existe en la escuela)
-- `PATCH /clients/:id` → `Client`
-- `DELETE /clients/:id` → void
+- `PATCH /clients/:id` → `Client` (solo admin; body `fullName`, `phone`, `dni`, `active`; 409 si el DNI ya existe). El admin usa `active: false` para "desactivar" (baja lógica).
+- `DELETE /clients/:id` → 204 (solo admin; borrado definitivo). El admin NO lo usa: ver `traps.md`.
 
 ### Sales
 - `GET /sales` → `Sale[]` (filtros: dateRange, clientId, status, page)
