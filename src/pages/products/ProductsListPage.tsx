@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import Modal from '../../components/Modal';
 import CreateProductModal from '../../components/CreateProductModal';
 import CategoriesManagerModal from '../../components/CategoriesManagerModal';
@@ -6,6 +7,7 @@ import { money } from '../../lib/format';
 import { unitMarginPercent, formatPercent } from '../../lib/profit';
 import { getProductCounts, deleteProduct, type Product } from '../../api/products';
 import { useProducts } from '../../hooks/useProducts';
+import { useCategories } from '../../hooks/useCategories';
 import { useSchool } from '../../hooks/useSchool';
 import {
   fetchAllProducts,
@@ -14,20 +16,9 @@ import {
   type ReportColumnKey,
 } from './utils/printProductsReport';
 import PrintReportModal from './components/PrintReportModal';
+import { ProductsToolbar } from './components/ProductsToolbar';
+import type { SortOption, TypeFilter } from './components/ProductsToolbar/types';
 import { useSearchContext } from './SearchContext';
-
-type TypeFilter = 'all' | 'product' | 'service';
-type SortOption =
-  'name-asc' | 'name-desc' | 'price-asc' | 'price-desc' | 'stock-asc' | 'stock-desc';
-
-const SORT_LABELS: Record<SortOption, string> = {
-  'name-asc': 'Nombre A-Z',
-  'name-desc': 'Nombre Z-A',
-  'price-asc': 'Precio (menor)',
-  'price-desc': 'Precio (mayor)',
-  'stock-asc': 'Stock (menor)',
-  'stock-desc': 'Stock (mayor)',
-};
 
 const SORT_MAP: Record<SortOption, { sortBy: string; sortOrder: 'asc' | 'desc' }> = {
   'name-asc': { sortBy: 'name', sortOrder: 'asc' },
@@ -54,7 +45,6 @@ export default function ProductsListPage() {
     setCategoryId,
     setSort,
     setSearch: setSearchProducts,
-    refetch,
   } = useProducts();
 
   const { search, setSearch: _setSearch } = useSearchContext();
@@ -85,6 +75,12 @@ export default function ProductsListPage() {
   const [categoriesModalOpen, setCategoriesModalOpen] = useState(false);
   const isInitialMountRef = useRef(true);
   const { schoolName } = useSchool();
+  const { categories } = useCategories();
+  const queryClient = useQueryClient();
+  const categoryNameById = useMemo(
+    () => new Map(categories.map(c => [c.id, c.name])),
+    [categories]
+  );
 
   // Fetch summary counts
   const fetchSummaryCounts = useCallback(async () => {
@@ -159,15 +155,13 @@ export default function ProductsListPage() {
   const handlePrintReport = useCallback(
     async (columns: ReportColumnKey[]) => {
       setGenerating(true);
+      const filters = { search: '', typeFilter, lowStockOnly, sort, categoryId };
       try {
-        const items = await fetchAllProducts(
-          { search: '', typeFilter, lowStockOnly, sort },
-          SORT_MAP
-        );
+        const items = await fetchAllProducts(filters, SORT_MAP);
         const html = generateProductsReportHtml({
           products: items,
           businessName: schoolName,
-          filters: { search: '', typeFilter, lowStockOnly, sort },
+          filters,
           columns,
         });
         printProductsReport(html);
@@ -178,8 +172,30 @@ export default function ProductsListPage() {
         setGenerating(false);
       }
     },
-    [typeFilter, lowStockOnly, sort, schoolName]
+    [typeFilter, lowStockOnly, sort, categoryId, schoolName]
   );
+
+  // Tras crear/editar, invalidar todas las listas de productos: el cache de
+  // React Query (staleTime 60 s, persistido) no se entera del cambio solo.
+  const handleProductSaved = useCallback(() => {
+    handlePageChange(1);
+    setRefreshTrigger(t => t + 1);
+    queryClient.invalidateQueries({ queryKey: ['products'] });
+  }, [handlePageChange, queryClient]);
+
+  const handleResetFilters = useCallback(() => {
+    handleLowStockChange(false);
+    handleTypeFilterChange('all');
+    handleCategoryChange(null);
+    handleSortChange('name-asc');
+    handlePageChange(1);
+  }, [
+    handleLowStockChange,
+    handleTypeFilterChange,
+    handleCategoryChange,
+    handleSortChange,
+    handlePageChange,
+  ]);
 
   const from = total === 0 ? 0 : (page - 1) * limit + 1;
   const to = Math.min(page * limit, total);
@@ -187,7 +203,7 @@ export default function ProductsListPage() {
   async function handleDelete(product: Product) {
     try {
       await deleteProduct(product.id);
-      await refetch();
+      await queryClient.invalidateQueries({ queryKey: ['products'] });
       setRefreshTrigger(t => t + 1);
     } catch {
       // Error handled by hook
@@ -212,8 +228,7 @@ export default function ProductsListPage() {
         isOpen={createModalOpen}
         onClose={() => setCreateModalOpen(false)}
         onSuccess={() => {
-          handlePageChange(1);
-          setRefreshTrigger(t => t + 1);
+          handleProductSaved();
           setCreateModalOpen(false);
         }}
       />
@@ -229,8 +244,7 @@ export default function ProductsListPage() {
             isOpen={true}
             onClose={() => setEditTarget(null)}
             onSuccess={() => {
-              handlePageChange(1);
-              setRefreshTrigger(t => t + 1);
+              handleProductSaved();
               setEditTarget(null);
             }}
             initialData={editTarget}
@@ -238,9 +252,12 @@ export default function ProductsListPage() {
         )}
       </Modal>
 
-      <CategoriesManagerModal isOpen={categoriesModalOpen} onClose={() => setCategoriesModalOpen(false)} />
+      <CategoriesManagerModal
+        isOpen={categoriesModalOpen}
+        onClose={() => setCategoriesModalOpen(false)}
+      />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <SummaryCard
           icon="inventory_2"
           iconColor="bg-primary-100 text-primary-700"
@@ -261,96 +278,24 @@ export default function ProductsListPage() {
         />
       </div>
 
-      <div className="flex items-center gap-3 text-sm">
-        <div className="flex items-center gap-1 bg-neutral-100 rounded-lg p-1">
-          {(['all', 'product', 'service'] as TypeFilter[]).map(t => (
-            <button
-              key={t}
-              onClick={() => handleTypeFilterChange(t)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${
-                typeFilter === t
-                  ? 'bg-white shadow border border-neutral-200 text-neutral-900'
-                  : 'text-neutral-500 hover:text-neutral-700'
-              }`}
-            >
-              {t === 'all' ? 'Todos' : t === 'product' ? 'Productos' : 'Servicios'}
-            </button>
-          ))}
-        </div>
+      <ProductsToolbar
+        typeFilter={typeFilter}
+        onTypeFilterChange={handleTypeFilterChange}
+        lowStockOnly={lowStockOnly}
+        onLowStockChange={handleLowStockChange}
+        categoryId={categoryId}
+        categories={categories}
+        onCategoryChange={handleCategoryChange}
+        sort={sort}
+        onSortChange={handleSortChange}
+        onResetFilters={handleResetFilters}
+        onOpenCategories={() => setCategoriesModalOpen(true)}
+        onCreateProduct={() => setCreateModalOpen(true)}
+        onPrint={() => setPrintModalOpen(true)}
+        printDisabled={loading}
+      />
 
-        <select
-          value={lowStockOnly ? 'true' : 'false'}
-          onChange={e => handleLowStockChange(e.target.value === 'true')}
-          className="px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-700 focus:border-primary-500 focus:outline-none"
-        >
-          <option value="false">Estado de Stock</option>
-          <option value="true">Solo stock bajo</option>
-        </select>
-
-        <select
-          value={categoryId ?? ''}
-          onChange={e => handleCategoryChange(e.target.value || null)}
-          className="px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-700 focus:border-primary-500 focus:outline-none"
-        >
-          <option value="">Todas las categorías</option>
-          {/* Opciones de categorías se cargarán desde API */}
-        </select>
-
-        <select
-          value={sort}
-          onChange={e => handleSortChange(e.target.value as SortOption)}
-          className="px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-700 focus:border-primary-500 focus:outline-none"
-        >
-          {Object.entries(SORT_LABELS).map(([val, label]) => (
-            <option key={val} value={val}>
-              {label}
-            </option>
-          ))}
-        </select>
-
-        <button
-          onClick={() => {
-            handleLowStockChange(false);
-            handleTypeFilterChange('all');
-            handleCategoryChange(null);
-            handleSortChange('name-asc');
-            handlePageChange(1);
-          }}
-          className="text-xs text-neutral-500 hover:text-neutral-700"
-        >
-          Limpiar filtros
-        </button>
-
-        <button
-          onClick={() => setCategoriesModalOpen(true)}
-          className="px-3 py-1.5 text-xs font-medium text-neutral-700 bg-neutral-100 rounded-lg hover:bg-neutral-200 flex items-center gap-1.5"
-          aria-label="Gestionar categorías"
-        >
-          <span className="material-icons text-sm">category</span>
-          Categorías
-        </button>
-
-        <button
-          onClick={() => setCreateModalOpen(true)}
-          className="ml-auto px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 flex items-center gap-1.5"
-          aria-label="Crear nuevo producto"
-        >
-          <span className="material-icons text-sm">add</span>
-          Nuevo producto
-        </button>
-
-        <button
-          onClick={() => setPrintModalOpen(true)}
-          disabled={loading}
-          className="px-3 py-1.5 text-xs font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
-          aria-label="Imprimir listado de productos"
-        >
-          <span className="material-icons text-sm">print</span>
-          Imprimir listado
-        </button>
-      </div>
-
-      <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-neutral-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-neutral-50 text-xs font-semibold text-neutral-400 uppercase">
@@ -366,11 +311,14 @@ export default function ProductsListPage() {
           <tbody className="divide-y divide-neutral-100">
             {products.map(p => {
               const s = stockLabel(p);
+              const categoryLabel =
+                (p.categoryId && categoryNameById.get(p.categoryId)) || 'Sin categoría';
               return (
                 <tr key={p.id} className="hover:bg-neutral-50">
                   <td className="px-3 py-3">
                     <div className="font-medium text-neutral-900">{p.name}</div>
                     {p.code && <span className="text-xs text-neutral-400">({p.code})</span>}
+                    <div className="text-xs text-neutral-500">{categoryLabel}</div>
                   </td>
                   <td className="px-3 py-3">
                     <span
@@ -425,8 +373,8 @@ export default function ProductsListPage() {
         </table>
       </div>
 
-      <div className="flex items-center justify-between text-sm text-neutral-600">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-neutral-600">
+        <div className="flex flex-wrap items-center gap-2">
           <span>
             Mostrando {from}-{to} de {total}
           </span>

@@ -169,9 +169,15 @@ export default function CreateProductModal({
         </div>
 
         <div>
-          <label className="text-sm font-medium text-neutral-700 block mb-1">Categoría</label>
+          <label
+            htmlFor="product-category"
+            className="text-sm font-medium text-neutral-700 block mb-1"
+          >
+            Categoría
+          </label>
           <div className="flex gap-2">
             <select
+              id="product-category"
               value={form.categoryId ?? ''}
               onChange={e => handleChange('categoryId', e.target.value || undefined)}
               className={`flex-1 px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('categoryId')}`}
