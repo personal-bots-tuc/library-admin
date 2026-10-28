@@ -25,4 +25,8 @@ export interface DataTableProps<T> {
   pageSize?: number;
   emptyMessage?: string;
   pagination?: DataTablePagination;
+  /** Muestra filas esqueleto en lugar de `data` mientras se carga. */
+  loading?: boolean;
+  /** Clases extra por fila (p. ej. resaltar turnos con diferencia). */
+  rowClassName?: (item: T) => string;
 }

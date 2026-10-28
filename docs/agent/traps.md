@@ -1,7 +1,7 @@
 ---
 type: Traps
 version: <sha-corto>
-validated: 2026-10-27
+validated: 2026-10-28
 update_when: when new non-obvious behavior is confirmed
 ---
 
@@ -149,3 +149,15 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Problema**: el backend hace `findOneAndDelete` sin revisar deuda ni ventas ni créditos asociados (deja huérfanos). Borrar el cliente por defecto ("Consumidor Final") lanza un `Error` plano y responde 500 en vez de un error de dominio. `PATCH` tampoco protege `isDefault`: renombrarlo rompe `findDefault`.
 **Regla**: el admin "elimina" con `PATCH active: false` (baja lógica) y bloquea las acciones sobre el cliente por defecto en la UI. No usar `DELETE` desde el front hasta que el backend valide deuda y ventas.
 **Evidencia**: `api/internal/service/customers/client-cases.ts` (`DeleteClient`, `UpdateClient`), `api/internal/handler/clients/clients.routes.ts`.
+
+## Caja: `hasDifference` incluye turnos abiertos y las fechas van en día local (2026-10-28)
+**Problema (1)**: `GET /cash-shifts?hasDifference=true` sin `status` devuelve también turnos abiertos (su `difference` es null y la condición `$ne: ['$difference', 0]` los incluye). `hasDifference` además no está en el schema zod (`cash.schemas.ts`); el handler lo lee del query crudo.
+**Solución (front)**: la pestaña "Con diferencia" envía `status=closed` junto a `hasDifference=true` (`pages/cash-register/utils/shiftTabs.ts`). Pendiente en backend: validarlo en zod y filtrarlo por estado.
+**Problema (2)**: `new Date("YYYY-MM-DD").toISOString()` es medianoche UTC; en Argentina (UTC-3) el rango arranca un día antes y `toDate` no llega al fin del día.
+**Solución**: `startOfDayIso` / `endOfDayIso` (`pages/cash-register/utils/dateRange.ts`) arman el día en hora local.
+**Problema (3)**: `ListCashShifts` llama `allOrdered()` (todos los turnos del tenant) en cada página solo para calcular `shiftNumber`: O(N) por request. Pendiente en backend.
+**Evidencia**: `api/internal/service/cash/cash-shift-cases.ts`, `api/internal/repository/mongo/cash/mongoose-cash-repositories.ts`.
+
+## Caja: el resumen diario no depende de los filtros de la tabla (2026-10-28)
+**Problema**: `GET /cash-shifts/summary/daily` no recibe filtros de fecha ni vendedor; siempre es "hoy", aunque la tabla esté filtrada. La tarjeta muestra la fecha de hoy aunque el rango de la tabla sea otro.
+**Regla**: no inferir del resumen lo que muestra la tabla filtrada. Los datos de pendientes salen de `pendingShifts` del resumen.

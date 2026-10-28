@@ -4,10 +4,72 @@ import { PaginationFooter } from './PaginationFooter';
 
 export type { ColumnDef } from './types';
 
+const SKELETON_ROWS = 6;
+
 const renderCell = <T,>(col: ColumnDef<T>, item: T): ReactNode => {
   if (col.cell) return col.cell(item);
   if (col.accessorKey) return item[col.accessorKey] as ReactNode;
   return null;
+};
+
+interface DataTableBodyProps<T> extends Pick<
+  DataTableProps<T>,
+  'columns' | 'keyExtractor' | 'emptyMessage' | 'rowClassName'
+> {
+  rows: T[];
+  loading: boolean;
+}
+
+const DataTableBody = <T,>({
+  rows,
+  loading,
+  columns,
+  keyExtractor,
+  emptyMessage,
+  rowClassName,
+}: DataTableBodyProps<T>) => {
+  if (loading) {
+    return (
+      <>
+        {Array.from({ length: SKELETON_ROWS }, (_, rowIdx) => (
+          <tr key={rowIdx} className="animate-pulse" data-testid="datatable-skeleton-row">
+            {columns.map((_, idx) => (
+              <td key={idx} className="px-6 py-4">
+                <div className="h-4 bg-neutral-100 rounded w-full" />
+              </td>
+            ))}
+          </tr>
+        ))}
+      </>
+    );
+  }
+
+  if (rows.length === 0) {
+    return (
+      <tr>
+        <td colSpan={columns.length} className="px-6 py-12 text-center text-neutral-400">
+          {emptyMessage}
+        </td>
+      </tr>
+    );
+  }
+
+  return (
+    <>
+      {rows.map(item => (
+        <tr
+          key={keyExtractor(item)}
+          className={`hover:bg-neutral-50/50 transition-colors ${rowClassName?.(item) ?? ''}`}
+        >
+          {columns.map((col, idx) => (
+            <td key={idx} className={`px-6 py-4 align-middle ${col.className ?? ''}`}>
+              {renderCell(col, item)}
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
 };
 
 export function DataTable<T>({
@@ -17,6 +79,8 @@ export function DataTable<T>({
   pageSize = 10,
   emptyMessage = 'No hay resultados',
   pagination,
+  loading = false,
+  rowClassName,
 }: DataTableProps<T>) {
   const [localPage, setLocalPage] = useState(1);
   const rows = data ?? [];
@@ -49,28 +113,19 @@ export function DataTable<T>({
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {visibleRows.length === 0 ? (
-              <tr>
-                <td colSpan={columns.length} className="px-6 py-12 text-center text-neutral-400">
-                  {emptyMessage}
-                </td>
-              </tr>
-            ) : (
-              visibleRows.map(item => (
-                <tr key={keyExtractor(item)} className="hover:bg-neutral-50/50 transition-colors">
-                  {columns.map((col, idx) => (
-                    <td key={idx} className={`px-6 py-4 align-middle ${col.className ?? ''}`}>
-                      {renderCell(col, item)}
-                    </td>
-                  ))}
-                </tr>
-              ))
-            )}
+            <DataTableBody
+              rows={visibleRows}
+              loading={loading}
+              columns={columns}
+              keyExtractor={keyExtractor}
+              emptyMessage={emptyMessage}
+              rowClassName={rowClassName}
+            />
           </tbody>
         </table>
       </div>
 
-      {totalPages > 1 && (
+      {!loading && totalPages > 1 && (
         <PaginationFooter
           page={paging.page}
           pageSize={paging.pageSize}

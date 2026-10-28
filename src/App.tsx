@@ -9,7 +9,7 @@ import ProductsListPage from './pages/products/ProductsListPage';
 import SalesPage from './pages/sales/SalesPage';
 import ClientesPage from './pages/clients/ClientsPage';
 import CreditosPage from './pages/credits/CreditsPage';
-import ArqueoPage from './pages/cash-register/CashRegisterPage';
+import ArqueoPage from './pages/cash-register';
 import UsuariosPage from './pages/users/UsersPage';
 import ConfigPage from './pages/settings/ConfigPage';
 import PriceLabelsPage from './pages/products/PriceLabelsPage/PriceLabelsPage';

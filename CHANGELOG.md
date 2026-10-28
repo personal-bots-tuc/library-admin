@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Arqueo de caja: refactor y paginación (sin ticket aún)** — `pages/cash-register` pasa a carpeta con `index.tsx`, `components/` (una carpeta por componente con `types.ts`), `hooks/` y `utils/`. La tabla de turnos y la de movimientos usan `DataTable` con paginación del servidor (`page`/`limit` y `total`); antes solo se veían los primeros 50 turnos y el footer "Mostrando 1-N de N" era falso. El "Resumen diario" pasa arriba de la tabla en una sola vista (Total operación, 7 conceptos, y la tira de conteo y diferencias) sin quitar ningún dato; los turnos abiertos se resumen en un banner con botón "Cerrar". Se quitan datos inventados (`transacciones = turnos × 40`). Los filtros de fecha usan el día local (antes, UTC corría el rango un día en Argentina). "Con diferencia" pide solo turnos cerrados (antes incluía abiertos). El botón de exportar exporta la página actual ("Exportar página"). Se eliminan movimientos desde el listado con confirmación (solo admin). Errores de carga con toast en lugar de `console.error`.
+- `DataTable` acepta `loading` (filas esqueleto) y `rowClassName` (opcionales, sin cambio para los usos existentes).
+
 ### Added
 - **Clientes: paginación del servidor, editar y desactivar (ADMIN-207)** — el listado usa `page`/`limit` y el `total` del backend (antes solo llegaban 10 clientes). Cada fila (admin y superadmin) permite editar nombre, DNI y celular (`PATCH`), y desactivar o reactivar el cliente con `active` (baja lógica, con confirmación). El cliente "Consumidor Final" no tiene acciones. Filtro de deudores con `hasDebt` y búsqueda con debounce de 300 ms.
 - **Alta de clientes desde el panel (ADMIN-206)** — el modal "Nuevo Cliente" de `ClientsPage` ahora es un formulario (nombre completo, DNI y celular opcional) que reutiliza `POST /clients`. Valida como el backend, muestra el error del servidor (p. ej. DNI duplicado) sin cerrar el modal y recarga la lista al crear.
