@@ -161,3 +161,8 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 ## Caja: el resumen diario no depende de los filtros de la tabla (2026-10-28)
 **Problema**: `GET /cash-shifts/summary/daily` no recibe filtros de fecha ni vendedor; siempre es "hoy", aunque la tabla esté filtrada. La tarjeta muestra la fecha de hoy aunque el rango de la tabla sea otro.
 **Regla**: no inferir del resumen lo que muestra la tabla filtrada. Los datos de pendientes salen de `pendingShifts` del resumen.
+
+## `POST/PATCH /products` rechaza `categoryId: null` (2026-10-28)
+**Problema**: el backend valida `categoryId` como `z.string().optional()`: acepta la clave ausente, pero rechaza `null` con `400 VALIDATION_ERROR` (`details: {"body.categoryId": [...]}`). El estado inicial del form de producto tenía `categoryId: null`, así que crear un producto sin elegir categoría fallaba, y el toast mostraba el mensaje genérico de axios.
+**Regla**: al enviar, omitir `categoryId` cuando no hay categoría (`categoryId || undefined`). Los errores de validación se muestran por campo leyendo `response.data.details` (`getApiFieldErrors` en `src/lib/apiError.ts`), no solo `message`.
+**Evidencia**: `src/components/CreateProductModal/index.tsx`, `src/components/CreateProductModal/CreateProductModal.test.tsx`.
