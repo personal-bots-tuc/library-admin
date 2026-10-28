@@ -31,9 +31,10 @@ scope:
 ### Products
 - `GET /products` → `Product[]` (filtros: search, categoryId, type, lowStock, page, limit, sortBy, sortOrder)
 - `GET /products/:id` → `Product`
-- `POST /products` → `Product` (body incluye `categoryId?`)
-- `PUT /products/:id` → `Product` (body parcial incluye `categoryId?`)
+- `POST /products` → `Product` (body incluye `categoryId?`: string o clave omitida; **`null` → 400**)
+- `PATCH /products/:id` → `Product` (body parcial; mismo criterio para `categoryId?`)
 - `DELETE /products/:id` → void
+- Error de validación (400): `{ error: "VALIDATION_ERROR", message, details: { "body.<campo>": string[] } }`. El form muestra `details` por campo con `getApiFieldErrors` (`src/lib/apiError.ts`) y el `message` en el toast.
 - `Product` shape: `{ id, name, description?, type, price, cost?, stock, minStock?, unit?, code?, active, categoryId?, createdAt, updatedAt }`
 
 ### Categories
