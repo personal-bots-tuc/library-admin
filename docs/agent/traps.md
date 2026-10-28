@@ -166,3 +166,15 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Problema**: el backend valida `categoryId` como `z.string().optional()`: acepta la clave ausente, pero rechaza `null` con `400 VALIDATION_ERROR` (`details: {"body.categoryId": [...]}`). El estado inicial del form de producto tenía `categoryId: null`, así que crear un producto sin elegir categoría fallaba, y el toast mostraba el mensaje genérico de axios.
 **Regla**: al enviar, omitir `categoryId` cuando no hay categoría (`categoryId || undefined`). Los errores de validación se muestran por campo leyendo `response.data.details` (`getApiFieldErrors` en `src/lib/apiError.ts`), no solo `message`.
 **Evidencia**: `src/components/CreateProductModal/index.tsx`, `src/components/CreateProductModal/CreateProductModal.test.tsx`.
+
+## Listado y select de categorías no se refrescan solos tras crear/editar (2026-10-28)
+**Problema (1)**: `useCategories` usa `staleTime` 60 s. Crear una categoría desde `CategoryQuickCreate` (dentro de `CreateProductModal`) no invalidaba `['categories']`, así que el `<select>` de categoría no mostraba la opción nueva y quedaba en "Sin categoría" hasta recargar.
+**Problema (2)**: `ProductsListPage` tras crear/editar solo cambiaba la página y los contadores. El listado `['products','list',params]` (`staleTime` 60 s, persistido en IndexedDB) seguía viejo, y al reabrir "Editar" el formulario salía con la categoría vacía.
+**Problema (3)**: el filtro de categoría no tenía opciones: el select solo tenía "Todas las categorías".
+**Regla**: toda mutación de categorías invalida `['categories']`; toda mutación de productos invalida `['products']`. No hay `useMutation` en el admin: usar `useQueryClient().invalidateQueries`.
+**Evidencia**: `src/components/CategoryQuickCreate/index.tsx`, `src/components/CategoriesManagerModal/index.tsx`, `src/pages/products/ProductsListPage.tsx` (`handleProductSaved`), `src/pages/products/components/ProductsToolbar/index.tsx`.
+
+## `PATCH /products/:id` no puede quitar la categoría (abierto, 2026-10-28)
+**Problema**: el form omite `categoryId` cuando no hay categoría (por la regla de `null` de arriba). El backend hace `product.update(changes)` (merge parcial), así que una clave ausente deja la categoría anterior intacta. En edición, elegir "Sin categoría" no la quita.
+**Regla**: hasta que el backend acepte `categoryId: null` en PATCH y lo aplique, el front no puede desasignar una categoría. No "arreglar" omitiendo la clave: el dato no cambia.
+**Evidencia**: `api/pkg/domain/entities/inventory/product.ts` (`update`), `api/pkg/domain/inventory/product-cases.ts` (`UpdateProduct`), `api/pkg/service/dto/products.ts:36`.
