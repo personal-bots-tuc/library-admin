@@ -2,9 +2,11 @@ import { useState } from 'react';
 import { useToast } from '../Toast/useToast';
 import Modal from '../Modal';
 import { unitGrossProfit, unitMarginPercent, formatPercent } from '../../lib/profit';
+import { getApiErrorMessage, getApiFieldErrors } from '../../lib/apiError';
 import { createProduct, updateProduct } from '../../api/products';
 import { useCategories } from '../../hooks/useCategories';
 import { CategoryQuickCreate } from '../CategoryQuickCreate';
+import { FieldError } from './FieldError';
 import type { CreateProductForm, CreateProductModalProps, ProductType } from './types';
 
 const EMPTY_FORM: CreateProductForm = {
@@ -22,6 +24,12 @@ const TYPE_OPTIONS: { label: string; value: ProductType }[] = [
   { label: 'Producto', value: 'product' },
   { label: 'Servicio', value: 'service' },
 ];
+
+// Mensajes en español para los errores de validación del backend (que llegan en inglés).
+const FIELD_ERROR_MESSAGES: Record<string, string> = {
+  categoryId: 'Seleccioná una categoría válida',
+};
+const DEFAULT_FIELD_ERROR = 'Valor inválido';
 
 function ProfitInfo({ price, cost }: { price: number; cost?: number }) {
   if (cost === undefined) return null;
@@ -42,7 +50,7 @@ function ProfitInfo({ price, cost }: { price: number; cost?: number }) {
   );
 }
 
-function mapToForm(data?: CreateProductModalProps['initialData']): CreateProductForm {
+const mapToForm = (data?: CreateProductModalProps['initialData']): CreateProductForm => {
   if (!data) return EMPTY_FORM;
   return {
     name: data.name,
@@ -54,7 +62,7 @@ function mapToForm(data?: CreateProductModalProps['initialData']): CreateProduct
     code: data.code ?? '',
     categoryId: data.categoryId ?? null,
   };
-}
+};
 
 export default function CreateProductModal({
   isOpen,
@@ -67,6 +75,7 @@ export default function CreateProductModal({
   const [submitting, setSubmitting] = useState(false);
   const { categories, loading: categoriesLoading } = useCategories();
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   if (!isOpen) return null;
 
@@ -74,24 +83,45 @@ export default function CreateProductModal({
     'w-full py-3.5 rounded-xl bg-primary-600 text-white font-semibold ' +
     'hover:bg-primary-700 transition-colors flex items-center justify-center gap-2';
 
+  const borderFor = (field: string) =>
+    fieldErrors[field]
+      ? 'border-danger-500 focus:border-danger-500'
+      : 'border-neutral-200 focus:border-primary-500';
+
   const handleChange = (field: keyof CreateProductForm, value: string | number | undefined) => {
     setForm(prev => ({ ...prev, [field]: value }));
+    setFieldErrors(prev => {
+      if (!(field in prev)) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
   };
 
   const handleSave = async () => {
     setSubmitting(true);
+    setFieldErrors({});
+    // El backend no acepta `categoryId: null`; si no hay categoría se omite la clave.
+    const payload: CreateProductForm = { ...form, categoryId: form.categoryId || undefined };
     try {
       if (initialData) {
-        await updateProduct(initialData.id, form);
+        await updateProduct(initialData.id, payload);
       } else {
-        await createProduct(form);
+        await createProduct(payload);
       }
       success(`Producto "${form.name}" guardado correctamente`);
       onSuccess();
       onClose();
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Error al guardar el producto';
-      showError(message);
+      const errors = getApiFieldErrors(err);
+      const translated = Object.fromEntries(
+        Object.keys(errors).map(field => [
+          field,
+          FIELD_ERROR_MESSAGES[field] ?? DEFAULT_FIELD_ERROR,
+        ])
+      );
+      setFieldErrors(translated);
+      showError(getApiErrorMessage(err, 'Error al guardar el producto'));
     } finally {
       setSubmitting(false);
     }
@@ -115,9 +145,10 @@ export default function CreateProductModal({
             onChange={e => handleChange('name', e.target.value)}
             maxLength={120}
             placeholder="Ej: Cuaderno espiral A4"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+            className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('name')}`}
             required
           />
+          <FieldError message={fieldErrors.name} />
         </div>
 
         <div>
@@ -129,8 +160,9 @@ export default function CreateProductModal({
             onChange={e => handleChange('code', e.target.value.toUpperCase())}
             maxLength={50}
             placeholder="Ej: PRD-ABC123 o código de barras (opcional)"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+            className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('code')}`}
           />
+          <FieldError message={fieldErrors.code} />
           <p className="text-xs text-neutral-500 mt-1">
             Se auto-genera si queda vacío (formato: PRD-XXXXX / SRV-XXXXX)
           </p>
@@ -142,7 +174,7 @@ export default function CreateProductModal({
             <select
               value={form.categoryId ?? ''}
               onChange={e => handleChange('categoryId', e.target.value || undefined)}
-              className="flex-1 px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+              className={`flex-1 px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('categoryId')}`}
               disabled={categoriesLoading}
             >
               <option value="">Sin categoría</option>
@@ -161,6 +193,7 @@ export default function CreateProductModal({
               +
             </button>
           </div>
+          <FieldError message={fieldErrors.categoryId} />
           <p className="text-xs text-neutral-500 mt-1">Categoría opcional</p>
         </div>
 
@@ -180,7 +213,7 @@ export default function CreateProductModal({
           <select
             value={form.type}
             onChange={e => handleChange('type', e.target.value as ProductType)}
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+            className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('type')}`}
           >
             {TYPE_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>
@@ -188,6 +221,7 @@ export default function CreateProductModal({
               </option>
             ))}
           </select>
+          <FieldError message={fieldErrors.type} />
         </div>
 
         <div>
@@ -201,9 +235,10 @@ export default function CreateProductModal({
             min={0}
             step="0.01"
             placeholder="0.00"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+            className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('price')}`}
             required
           />
+          <FieldError message={fieldErrors.price} />
         </div>
 
         <div>
@@ -217,8 +252,9 @@ export default function CreateProductModal({
             min={0}
             step="0.01"
             placeholder="0.00"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+            className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('cost')}`}
           />
+          <FieldError message={fieldErrors.cost} />
         </div>
 
         {profitBlock}
@@ -234,9 +270,10 @@ export default function CreateProductModal({
             min={0}
             step={1}
             placeholder="0"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+            className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('stock')}`}
             required
           />
+          <FieldError message={fieldErrors.stock} />
         </div>
 
         <div>
@@ -250,8 +287,9 @@ export default function CreateProductModal({
             min={0}
             step={1}
             placeholder="0"
-            className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 focus:border-primary-500 focus:outline-none"
+            className={`w-full px-4 py-2.5 rounded-xl border focus:outline-none ${borderFor('minStock')}`}
           />
+          <FieldError message={fieldErrors.minStock} />
         </div>
 
         <div className="pt-4 border-t border-neutral-200">

@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Categorías de producto con CRUD y gestión rápida (ADMIN-200)** — Soporte de categorías opcionales en productos, selector con creación rápida en modal de producto, modal de gestión de categorías en listado con creación y eliminación confirmada, tipos y hooks actualizados, documentación de contratos y POS actualizada.
 
 ### Fixed
+- **Crear producto sin categoría (ADMIN-209)** — el form enviaba `categoryId: null` por defecto y el backend lo rechaza con 400. Ahora se omite la clave cuando no hay categoría. Los errores de validación del backend se muestran debajo del campo correspondiente (antes solo aparecía el mensaje genérico de axios). Documentación de IA actualizada: `contracts.md` (POST/PATCH de productos, `null` rechazado, forma del error) y `architecture.md` (árbol de `CreateProductModal`).
 - **Columna Deuda invertida (ADMIN-207)** — en clientes, deuda es `balance > 0`; antes se marcaba "Pendiente" con saldo negativo.
 - **Toasts no re-disparan efectos (ADMIN-206)** — `ToastProvider` memoriza el valor del contexto; antes, un error de carga en `ClientsPage` provocaba un bucle de peticiones. Los errores de carga de clientes ahora se muestran como toast en lugar de `console.error`.
 - **Crash IndexedDB tras login (ADMIN-112)** — la capa offline persistía en un object
