@@ -33,7 +33,7 @@ src/
 │   ├── clients/     # Listado paginado (hooks/useClientsList), alta/edición (ClientFormModal), baja lógica con ConfirmModal
 │   ├── sales/       # Sales + credit notes
 │   ├── credits/     # Credits/debts management
-│   ├── cash-register/ # Cash shifts + movements
+│   ├── cash-register/ # Arqueo de caja: index.tsx (página), components/ (carpeta por componente), hooks/ (lista paginada, resumen, movimientos), utils/ (fechas, tabs, CSV)
 │   ├── schools/     # Schools multi-tenant
 │   ├── settings/    # Global settings
 │   │   ├── ConfigPage.tsx          # Orquestador declarativo
