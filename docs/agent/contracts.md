@@ -1,7 +1,7 @@
 ---
 type: Contracts
 version: <sha-corto>
-validated: 2026-10-15
+validated: 2026-10-29
 update_when: when API contracts, env vars, or external dependencies change
 scope:
   - src/api/
@@ -100,11 +100,8 @@ scope:
 - `POST /bots/:id/train` → `BotTrainingResult`
 
 ### Dashboard
-- `GET /dashboard/stats` → `DashboardStats` (totalSales, totalRevenue, activeClients, lowStockCount)
-- `GET /dashboard/sales-chart` → `SalesChartData[]`
-- `GET /dashboard/top-products` → `TopProduct[]`
-- `GET /dashboard/credit-summary` → `CreditSummary`
-- `GET /dashboard/profitability` → `ProfitabilityData`
+- `GET /dashboard/overview?from&to` → `DashboardOverview`. `lowStock` y `credit.clients` vienen acotados a 10; `lowStockTotal` y `credit.clientsWithDebt` son los totales reales (`lowStockTotal` es opcional: falta en APIs previas a API-201).
+- Modales "Ver todos": `GET /products?lowStock=true&active=true&type=product` (mismo criterio que el overview) y `GET /credits?sortBy=balance&sortOrder=desc`, paginados.
 
 ### Settings
 - `GET /settings` → `Settings`

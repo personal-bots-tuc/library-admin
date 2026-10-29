@@ -1,8 +1,16 @@
-import api from "../client";
-import type { ClientCreditResult, CreditsListResult, CreditsSummary, RecentMovement, SettleDebtApiResponse, SettleDebtPayload, SettleDebtResponse } from "./types";
+import api from '../client';
+import type {
+  ClientCreditResult,
+  CreditsListResult,
+  CreditsSummary,
+  RecentMovement,
+  SettleDebtApiResponse,
+  SettleDebtPayload,
+  SettleDebtResponse,
+} from './types';
 
 export async function getCreditsSummary(): Promise<CreditsSummary> {
-  const { data } = await api.get("/credits/summary");
+  const { data } = await api.get('/credits/summary');
   return data;
 }
 
@@ -11,13 +19,15 @@ export async function listCredits(params?: {
   overdue?: boolean;
   page?: number;
   limit?: number;
+  sortBy?: 'balance' | 'fullName' | 'lastPaymentAt';
+  sortOrder?: 'asc' | 'desc';
 }): Promise<CreditsListResult> {
-  const { data } = await api.get("/credits", { params });
+  const { data } = await api.get('/credits', { params });
   return data;
 }
 
 export async function getRecentHistory(limit = 5): Promise<RecentMovement[]> {
-  const { data } = await api.get("/credits/history", { params: { limit } });
+  const { data } = await api.get('/credits/history', { params: { limit } });
   return data;
 }
 
@@ -33,8 +43,11 @@ export async function settleDebt(
   clientId: string,
   payload: SettleDebtPayload
 ): Promise<SettleDebtResponse> {
-  const { data } = await api.post<SettleDebtApiResponse>(`/credits/client/${clientId}/settle`, payload);
+  const { data } = await api.post<SettleDebtApiResponse>(
+    `/credits/client/${clientId}/settle`,
+    payload
+  );
   return data.data;
 }
 
-export type * from "./types";
+export type * from './types';

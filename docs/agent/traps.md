@@ -1,7 +1,7 @@
 ---
 type: Traps
 version: <sha-corto>
-validated: 2026-10-28
+validated: 2026-10-29
 update_when: when new non-obvious behavior is confirmed
 ---
 
@@ -185,3 +185,9 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Problema**: el reemplazo de `&`, `<`, `>` y `"` por sí mismos dejaba el HTML sin escapar; un nombre con `<` se inyectaba en la ventana de impresión.
 **Regla**: usar `escapeHtml` de `utils/escapeHtml.ts` para todo dato de producto o escuela que vaya al HTML.
 **Evidencia**: `src/pages/products/PriceLabelsPage/utils/escapeHtml.ts`, `utils/printLabels.ts`.
+
+## Dashboard: las listas vienen acotadas por el back (ADMIN-212 · API-201, 2026-10-29)
+**Problema**: `lowStock` y `credit.clients` del overview traen como máximo 10 elementos; contar `lowStock.length` subestima el total.
+**Regla**: usar `lowStockTotal` (con fallback a `lowStock.length`) y `credit.clientsWithDebt`. "Ver todos" pide `/products?lowStock=true` con `active=true&type=product`; sin esos filtros el total incluye servicios e inactivos y no coincide con la card.
+**Orden**: la card ordena por criticidad (stock/mínimo) en el back; el modal pagina por `stock` ascendente (`/products` no ordena por ratio). Es esperable que el primero no coincida.
+**Evidencia**: `src/pages/dashboard/hooks/use-low-stock-page.ts`, `components/dashboard-sections/index.tsx`.
