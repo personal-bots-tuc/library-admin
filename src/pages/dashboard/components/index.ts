@@ -4,4 +4,13 @@ export { ProfitabilityCard } from './profitability-card';
 export { TopProductsTable } from './top-products-table';
 export { LowStockList } from './low-stock-list';
 export { CreditSummary } from './credit-summary';
-export { SkeletonKpi, SkeletonChart, SkeletonTable, SkeletonCard } from './skeleton';
+export { DashboardSections } from './dashboard-sections';
+export { LowStockModal } from './low-stock-modal';
+export { DebtorsModal } from './debtors-modal';
+export {
+  SkeletonKpi,
+  SkeletonChart,
+  SkeletonTable,
+  SkeletonCard,
+  DashboardSkeleton,
+} from './skeleton';
