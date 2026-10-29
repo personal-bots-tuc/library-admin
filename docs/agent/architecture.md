@@ -21,8 +21,11 @@ src/
 │   ├── products/    # Products CRUD + Preciero + impresión de listado
 │   │   ├── ProductsLayout.tsx      # Tabs "Listado" | "Preciero" + <Outlet>
 │   │   ├── ProductsListPage.tsx    # Listado paginado (useProducts) + botón imprimir (modal columnas)
+│   │   ├── types.ts                # Tipos compartidos del módulo products (TypeFilter, SortOption, CategoryOption)
+│   │   ├── styles.ts               # SELECT_CLASS compartida
 │   │   ├── components/
 │   │   │   ├── ProductsToolbar/        # Barra de filtros y acciones (wrap responsive; index.tsx + types.ts)
+│   │   │   ├── CategorySelect/         # Select de categoría reutilizado (toolbar y modal de impresión)
 │   │   │   └── PrintReportModal/       # Selector de columnas (default sin costo/margen)
 │   │   ├── utils/printProductsReport.ts # Reporte A4 portrait (fetch all + registry de columnas + HTML print)
 │   │   └── PriceLabelsPage/        # Preciero: etiquetas A4 10/20/30

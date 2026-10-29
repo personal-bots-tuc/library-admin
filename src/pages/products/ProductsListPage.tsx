@@ -17,7 +17,7 @@ import {
 } from './utils/printProductsReport';
 import PrintReportModal from './components/PrintReportModal';
 import { ProductsToolbar } from './components/ProductsToolbar';
-import type { SortOption, TypeFilter } from './components/ProductsToolbar/types';
+import type { SortOption, TypeFilter } from './types';
 import { useSearchContext } from './SearchContext';
 
 const SORT_MAP: Record<SortOption, { sortBy: string; sortOrder: 'asc' | 'desc' }> = {

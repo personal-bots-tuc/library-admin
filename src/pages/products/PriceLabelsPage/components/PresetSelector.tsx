@@ -1,21 +1,15 @@
-import { LABEL_PRESETS } from "../utils/labelConfig";
-import type { PresetOption } from "../types";
+import { LABEL_PRESETS, PRESET_LABELS } from '../utils/labelConfig';
+import type { PresetOption } from '../types';
 
 interface PresetSelectorProps {
   value: PresetOption;
   onChange: (value: PresetOption) => void;
 }
 
-const PRESET_LABELS: Record<PresetOption, { label: string; description: string }> = {
-  "10": { label: "10 por hoja", description: "2 columnas × 5 filas — Etiquetas grandes (95×50mm)" },
-  "20": { label: "20 por hoja", description: "4 columnas × 5 filas — Etiquetas medianas (47×50mm)" },
-  "30": { label: "30 por hoja", description: "3 columnas × 10 filas — Estándar Avery 5160 (66×25mm)" },
-};
-
 export default function PresetSelector({ value, onChange }: PresetSelectorProps) {
   return (
     <div className="flex gap-3">
-      {(Object.keys(LABEL_PRESETS) as PresetOption[]).map((preset) => {
+      {(Object.keys(LABEL_PRESETS) as PresetOption[]).map(preset => {
         const presetData = LABEL_PRESETS[preset];
         const labelInfo = PRESET_LABELS[preset];
         return (
@@ -23,8 +17,8 @@ export default function PresetSelector({ value, onChange }: PresetSelectorProps)
             key={preset}
             className={`flex items-center gap-2 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all ${
               value === preset
-                ? "border-primary-600 bg-primary-50"
-                : "border-neutral-200 hover:border-primary-300 hover:bg-neutral-50"
+                ? 'border-primary-600 bg-primary-50'
+                : 'border-neutral-200 hover:border-primary-300 hover:bg-neutral-50'
             }`}
           >
             <input
