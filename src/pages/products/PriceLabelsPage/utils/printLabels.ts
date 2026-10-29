@@ -1,22 +1,22 @@
-import type { Product } from "../../../../api/products";
-import type { PresetOption, LabelPreset } from "../types";
-import { LABEL_PRESETS } from "./labelConfig";
+import type { PresetOption, LabelPreset, PriceLabelProduct } from '../types';
+import { LABEL_PRESETS } from './labelConfig';
+import { escapeHtml } from './escapeHtml';
 
 interface PrintLabelsOptions {
-  products: Product[];
+  products: PriceLabelProduct[];
   selection: Map<string, number>;
   preset: PresetOption;
   schoolName: string;
 }
 
 function generateLabelHTML(
-  product: Product,
+  product: PriceLabelProduct,
   schoolName: string,
   preset: LabelPreset
 ): string {
-  const price = new Intl.NumberFormat("es-AR", {
-    style: "currency",
-    currency: "ARS",
+  const price = new Intl.NumberFormat('es-AR', {
+    style: 'currency',
+    currency: 'ARS',
     minimumFractionDigits: 2,
   }).format(product.price);
 
@@ -45,19 +45,10 @@ function generateLabelHTML(
       </div>
       <div style="display: flex; justify-content: space-between; align-items: baseline; margin-top: 2mm;">
         <span style="font-size: 14px; font-weight: 700; color: #1f2937;">${price}</span>
-        <span style="font-size: 8px; font-family: monospace; color: #6b7280;">${escapeHtml(product.code ?? "—")}</span>
+        <span style="font-size: 8px; font-family: monospace; color: #6b7280;">${escapeHtml(product.code ?? '—')}</span>
       </div>
     </div>
   `;
-}
-
-function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, "&")
-    .replace(/'/g, "'");
 }
 
 function generatePrintCSS(preset: LabelPreset): string {
@@ -103,8 +94,8 @@ export function openPrintWindow(options: PrintLabelsOptions): void {
   const labelsPerPage = presetData.cols * presetData.rows;
 
   // Build array of labels to print (expanded by qty)
-  const labelsToPrint: Product[] = [];
-  products.forEach((p) => {
+  const labelsToPrint: PriceLabelProduct[] = [];
+  products.forEach(p => {
     const qty = selection.get(p.id);
     if (qty && qty > 0) {
       for (let i = 0; i < qty; i++) {
@@ -116,26 +107,30 @@ export function openPrintWindow(options: PrintLabelsOptions): void {
   if (labelsToPrint.length === 0) return;
 
   // Group into pages
-  const pages: Product[][] = [];
+  const pages: PriceLabelProduct[][] = [];
   for (let i = 0; i < labelsToPrint.length; i += labelsPerPage) {
     pages.push(labelsToPrint.slice(i, i + labelsPerPage));
   }
 
   const css = generatePrintCSS(presetData);
 
-  const pagesHTML = pages.map((pageLabels, pageIndex) => {
-    const labelsHTML = pageLabels.map((p) => generateLabelHTML(p, schoolName, presetData)).join("");
-    const emptySlots = labelsPerPage - pageLabels.length;
-    const emptyHTML = Array.from({ length: emptySlots }, () =>
-      `<div class="label" style="width: ${presetData.labelWidth}mm; height: ${presetData.labelHeight}mm; border: 1px dashed #d1d5db; border-radius: 4px; background: #f9fafb;"></div>`
-    ).join("");
+  const pagesHTML = pages
+    .map((pageLabels, pageIndex) => {
+      const labelsHTML = pageLabels.map(p => generateLabelHTML(p, schoolName, presetData)).join('');
+      const emptySlots = labelsPerPage - pageLabels.length;
+      const emptyHTML = Array.from(
+        { length: emptySlots },
+        () =>
+          `<div class="label" style="width: ${presetData.labelWidth}mm; height: ${presetData.labelHeight}mm; border: 1px dashed #d1d5db; border-radius: 4px; background: #f9fafb;"></div>`
+      ).join('');
 
-    return `
-      <div class="page${pageIndex === pages.length - 1 ? " last-page" : ""}">
+      return `
+      <div class="page${pageIndex === pages.length - 1 ? ' last-page' : ''}">
         <div class="grid">${labelsHTML}${emptyHTML}</div>
       </div>
     `;
-  }).join("");
+    })
+    .join('');
 
   const html = `
     <!DOCTYPE html>
@@ -157,7 +152,7 @@ export function openPrintWindow(options: PrintLabelsOptions): void {
     </html>
   `;
 
-  const printWindow = window.open("", "_blank");
+  const printWindow = window.open('', '_blank');
   if (printWindow) {
     printWindow.document.write(html);
     printWindow.document.close();

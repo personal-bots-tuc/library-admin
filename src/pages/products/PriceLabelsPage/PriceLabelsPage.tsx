@@ -1,39 +1,35 @@
-import { useState, useEffect, useCallback } from "react";
-import { useSchool } from "../../../hooks/useSchool";
-import { useAllProducts } from "../../../hooks/useAllProducts";
-import { usePriceLabelsSelection } from "./hooks/usePriceLabelsSelection";
-import PriceLabelsTable from "./components/PriceLabelsTable";
-import PresetSelector from "./components/PresetSelector";
-import LabelPreview from "./components/LabelPreview";
-import PriceLabelsLoading from "./components/PriceLabelsLoading";
-import PriceLabelsError from "./components/PriceLabelsError";
-import PriceLabelsHeader from "./components/PriceLabelsHeader";
-import { openPrintWindow } from "./utils/printLabels";
-import type { PresetOption } from "./types";
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSchool } from '../../../hooks/useSchool';
+import { useAllProducts } from '../../../hooks/useAllProducts';
+import { useCategories } from '../../../hooks/useCategories';
+import { usePriceLabelsSelection } from './hooks/usePriceLabelsSelection';
+import PriceLabelsTable from './components/PriceLabelsTable';
+import PresetSelector from './components/PresetSelector';
+import LabelPreview from './components/LabelPreview';
+import PriceLabelsLoading from './components/PriceLabelsLoading';
+import PriceLabelsError from './components/PriceLabelsError';
+import PriceLabelsHeader from './components/PriceLabelsHeader';
+import { openPrintWindow } from './utils/printLabels';
+import type { PresetOption } from './types';
 
 export default function PriceLabelsPage() {
   const { school } = useSchool();
   const { products, loading, error, refetch } = useAllProducts();
-  const {
-    selected,
-    totalLabels,
-    toggleProduct,
-    setQty,
-    clearSelection,
-    isSelected,
-    getQty,
-  } = usePriceLabelsSelection();
+  const { categories } = useCategories();
+  const selection = usePriceLabelsSelection();
+  const { selected, totalLabels, clearSelection, pruneTo } = selection;
 
-  const [search, setSearch] = useState("");
-  const [preset, setPreset] = useState<PresetOption>("30");
+  const [preset, setPreset] = useState<PresetOption>('30');
   const [showPreview, setShowPreview] = useState(true);
 
-  const schoolName = school?.name ?? "Mi Negocio";
+  const schoolName = school?.name ?? 'Mi Negocio';
 
-  // Reset selection when products change (e.g., after refetch)
+  // Solo se descartan de la selección los productos que ya no están en el catálogo.
+  // Antes se vaciaba todo cuando cambiaba la cantidad de productos (refetch/sync).
+  const catalogIds = useMemo(() => products.map(p => p.id), [products]);
   useEffect(() => {
-    clearSelection();
-  }, [products.length, clearSelection]);
+    pruneTo(catalogIds);
+  }, [catalogIds, pruneTo]);
 
   const handlePrint = useCallback(() => {
     if (totalLabels === 0) return;
@@ -44,11 +40,6 @@ export default function PriceLabelsPage() {
       schoolName,
     });
   }, [products, selected, totalLabels, preset, schoolName]);
-
-  const handleClearAll = useCallback(() => {
-    clearSelection();
-    setSearch("");
-  }, [clearSelection]);
 
   if (loading) {
     return <PriceLabelsLoading />;
@@ -62,7 +53,7 @@ export default function PriceLabelsPage() {
     <div className="p-6 space-y-6">
       <PriceLabelsHeader
         totalLabels={totalLabels}
-        onClearAll={handleClearAll}
+        onClearAll={clearSelection}
         onPrint={handlePrint}
         disabledPrint={totalLabels === 0}
         showPreview={showPreview}
@@ -71,20 +62,7 @@ export default function PriceLabelsPage() {
 
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <PriceLabelsTable
-            products={products}
-            selection={{
-              selected,
-              totalLabels,
-              toggleProduct,
-              setQty,
-              clearSelection,
-              isSelected,
-              getQty,
-            }}
-            search={search}
-            onSearchChange={setSearch}
-          />
+          <PriceLabelsTable products={products} categories={categories} selection={selection} />
 
           <div className="bg-white border border-neutral-200 rounded-xl p-4">
             <h3 className="text-sm font-semibold text-neutral-900 mb-3">Formato de hoja</h3>
