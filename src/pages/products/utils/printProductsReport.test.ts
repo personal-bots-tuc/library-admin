@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
+  buildReportListParams,
   fetchAllProducts,
   generateProductsReportHtml,
   stockDisplay,
@@ -64,6 +65,20 @@ describe('printProductsReport', () => {
     });
     it('devuelve — cuando no hay costo', () => {
       expect(marginDisplay({ ...baseProduct, cost: undefined })).toBe('—');
+    });
+  });
+
+  describe('buildReportListParams', () => {
+    const sortMap = { 'name-asc': { sortBy: 'name', sortOrder: 'asc' as const } };
+
+    it('incluye categoryId cuando hay categoría elegida', () => {
+      const params = buildReportListParams({ ...noFilters, categoryId: 'cat-1' }, sortMap);
+      expect(params).toMatchObject({ active: true, categoryId: 'cat-1', sortBy: 'name' });
+    });
+
+    it('no envía categoryId cuando la categoría es null', () => {
+      const params = buildReportListParams({ ...noFilters, categoryId: null }, sortMap);
+      expect(params).not.toHaveProperty('categoryId');
     });
   });
 

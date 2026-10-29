@@ -93,11 +93,11 @@ export interface ProductsReportOptions {
   generatedAt?: Date;
 }
 
-/** Fetch all pages of products with the current filters (loop limit=100). */
-export async function fetchAllProducts(
+/** Parámetros de listado que usa el reporte (sin paginación). Compartido por la impresión y el conteo. */
+export function buildReportListParams(
   filters: ProductsReportFilters,
   sortMap: Record<string, { sortBy: string; sortOrder: 'asc' | 'desc' }>
-): Promise<Product[]> {
+): ListProductsParams {
   const base: ListProductsParams = {
     active: true,
     limit: PAGE_SIZE,
@@ -107,6 +107,15 @@ export async function fetchAllProducts(
   if (filters.typeFilter !== 'all') base.type = filters.typeFilter;
   if (filters.lowStockOnly) base.lowStock = true;
   if (filters.categoryId) base.categoryId = filters.categoryId;
+  return base;
+}
+
+/** Fetch all pages of products with the current filters (loop limit=100). */
+export async function fetchAllProducts(
+  filters: ProductsReportFilters,
+  sortMap: Record<string, { sortBy: string; sortOrder: 'asc' | 'desc' }>
+): Promise<Product[]> {
+  const base = buildReportListParams(filters, sortMap);
 
   const items: Product[] = [];
   let page = 1;

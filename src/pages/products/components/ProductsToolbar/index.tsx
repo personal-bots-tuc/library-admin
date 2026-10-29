@@ -1,4 +1,7 @@
-import type { ProductsToolbarProps, SortOption, TypeFilter } from './types';
+import { SELECT_CLASS } from '../../styles';
+import type { SortOption, TypeFilter } from '../../types';
+import { CategorySelect } from '../CategorySelect';
+import type { ProductsToolbarProps } from './types';
 
 const SORT_LABELS: Record<SortOption, string> = {
   'name-asc': 'Nombre A-Z',
@@ -16,9 +19,6 @@ const TYPE_TAB_LABELS: Record<TypeFilter, string> = {
   product: 'Productos',
   service: 'Servicios',
 };
-
-const SELECT_CLASS =
-  'px-2.5 py-1.5 rounded-lg border border-neutral-300 bg-white text-sm text-neutral-700 focus:border-primary-500 focus:outline-none max-w-full';
 
 const BUTTON_BASE =
   'px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap flex items-center gap-1.5';
@@ -67,19 +67,12 @@ export const ProductsToolbar = ({
         <option value="true">Solo stock bajo</option>
       </select>
 
-      <select
-        value={categoryId ?? ''}
-        onChange={e => onCategoryChange(e.target.value || null)}
-        aria-label="Filtrar por categoría"
-        className={SELECT_CLASS}
-      >
-        <option value="">Todas las categorías</option>
-        {categories.map(cat => (
-          <option key={cat.id} value={cat.id}>
-            {cat.name}
-          </option>
-        ))}
-      </select>
+      <CategorySelect
+        value={categoryId}
+        onChange={onCategoryChange}
+        categories={categories}
+        ariaLabel="Filtrar por categoría"
+      />
 
       <select
         value={sort}

@@ -175,3 +175,13 @@ upgrades: renombrar la DB (`*-v2`) y borrar la legacy (best-effort).
 **Problema**: el form omite `categoryId` cuando no hay categoría (el backend rechaza `null`), y `product.update` hace merge parcial: la categoría anterior queda.
 **Regla**: no desasignar hasta que el backend acepte `categoryId: null` en PATCH.
 **Evidencia**: `api/pkg/domain/inventory/product-cases.ts` (`UpdateProduct`).
+
+## Preciero: la selección no se vacía al cambiar el catálogo (2026-10-28)
+**Problema**: `PriceLabelsPage` hacía `clearSelection()` cada vez que cambiaba `products.length`; un refetch borraba toda la selección.
+**Regla**: al cambiar el catálogo, solo se podan los ids que ya no existen (`pruneTo`). La selección es un `Map<id, qty>` que vive fuera de la vista paginada.
+**Evidencia**: `src/pages/products/PriceLabelsPage/PriceLabelsPage.tsx`, `hooks/usePriceLabelsSelection.ts`.
+
+## Preciero: `escapeHtml` escapaba nada (2026-10-28)
+**Problema**: el reemplazo de `&`, `<`, `>` y `"` por sí mismos dejaba el HTML sin escapar; un nombre con `<` se inyectaba en la ventana de impresión.
+**Regla**: usar `escapeHtml` de `utils/escapeHtml.ts` para todo dato de producto o escuela que vaya al HTML.
+**Evidencia**: `src/pages/products/PriceLabelsPage/utils/escapeHtml.ts`, `utils/printLabels.ts`.
